@@ -27,6 +27,33 @@ public class PlanAction {
     protected PlanAction() {
     }
 
+    public PlanAction(
+            InvestmentPlan investmentPlan,
+            ActionType actionType,
+            Integer triggerPrice,
+            Integer quantity,
+            String memo
+    ) {
+        this.investmentPlan = investmentPlan;
+        this.actionType = actionType;
+        this.triggerPrice = triggerPrice;
+        this.quantity = quantity;
+        this.memo = memo;
+        this.actionStatus = ActionStatus.PENDING;
+    }
+
+    public void update(
+            ActionType actionType,
+            Integer triggerPrice,
+            Integer quantity,
+            String memo
+    ) {
+        this.actionType = actionType;
+        this.triggerPrice = triggerPrice;
+        this.quantity = quantity;
+        this.memo = memo;
+    }
+
     public Long getId() {
         return id;
     }
@@ -54,6 +81,5 @@ public class PlanAction {
     public ActionStatus getActionStatus() {
         return actionStatus;
     }
-
 
 }
