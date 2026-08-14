@@ -5,6 +5,8 @@ import com.project.investment_tracker.dto.TradeResponse;
 import com.project.investment_tracker.dto.TradeUpdateRequest;
 import com.project.investment_tracker.entity.PlanAction;
 import com.project.investment_tracker.entity.Trade;
+import com.project.investment_tracker.global.error.ErrorMessage;
+import com.project.investment_tracker.global.error.ResourceNotFoundException;
 import com.project.investment_tracker.repository.PlanActionRepository;
 import com.project.investment_tracker.repository.TradeRepository;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,7 @@ public class TradeService {
         }
 
         return planActionRepository.findById(planActionId)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.PLAN_ACTION_NOT_FOUND));
     }
 
     public TradeResponse createTrade(TradeCreateRequest request) {
@@ -57,17 +59,17 @@ public class TradeService {
                 .toList();
     }
 
-    public TradeResponse getTrade(Long tradeId) {
-        Trade trade = tradeRepository.findById(tradeId)
-                .orElseThrow();
+    public TradeResponse getTrade(Long id) {
+        Trade trade = tradeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.TRADE_NOT_FOUND));
 
         return TradeResponse.from(trade);
     }
 
     @Transactional
-    public TradeResponse updateTrade(Long tradeId, TradeUpdateRequest request) {
-        Trade trade = tradeRepository.findById(tradeId)
-                .orElseThrow();
+    public TradeResponse updateTrade(Long id, TradeUpdateRequest request) {
+        Trade trade = tradeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.TRADE_NOT_FOUND));
 
         PlanAction planAction = findPlanActionOrNull(request.planActionId());
 
@@ -86,6 +88,9 @@ public class TradeService {
     }
 
     public void deleteTrade(Long id) {
-        tradeRepository.deleteById(id);
+        Trade trade = tradeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.TRADE_NOT_FOUND));
+
+        tradeRepository.delete(trade);
     }
 }

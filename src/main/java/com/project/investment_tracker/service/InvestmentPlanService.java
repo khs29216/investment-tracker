@@ -5,6 +5,8 @@ import com.project.investment_tracker.dto.InvestmentPlanCreateRequest;
 import com.project.investment_tracker.dto.InvestmentPlanResponse;
 import com.project.investment_tracker.dto.InvestmentPlanUpdateRequest;
 import com.project.investment_tracker.entity.InvestmentPlan;
+import com.project.investment_tracker.global.error.ErrorMessage;
+import com.project.investment_tracker.global.error.ResourceNotFoundException;
 import com.project.investment_tracker.repository.InvestmentPlanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +45,7 @@ public class InvestmentPlanService {
 
     public InvestmentPlanResponse getPlan(Long id) {
         InvestmentPlan investmentPlan = investmentPlanRepository.findById(id)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.INVESTMENT_PLAN_NOT_FOUND));
 
         return InvestmentPlanResponse.from(investmentPlan);
     }
@@ -51,7 +53,7 @@ public class InvestmentPlanService {
     @Transactional
     public InvestmentPlanResponse updatePlan(Long id, InvestmentPlanUpdateRequest request) {
         InvestmentPlan investmentPlan = investmentPlanRepository.findById(id)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.INVESTMENT_PLAN_NOT_FOUND));
 
         investmentPlan.update(
                 request.stockName(),
@@ -68,6 +70,9 @@ public class InvestmentPlanService {
     }
 
     public void deletePlan(Long id) {
-        investmentPlanRepository.deleteById(id);
+        InvestmentPlan investmentPlan = investmentPlanRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.INVESTMENT_PLAN_NOT_FOUND));
+
+        investmentPlanRepository.delete(investmentPlan);
     }
 }

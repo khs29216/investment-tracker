@@ -5,6 +5,9 @@ import com.project.investment_tracker.dto.PlanActionResponse;
 import com.project.investment_tracker.dto.PlanActionUpdateRequest;
 import com.project.investment_tracker.entity.InvestmentPlan;
 import com.project.investment_tracker.entity.PlanAction;
+import com.project.investment_tracker.global.error.ErrorMessage;
+import com.project.investment_tracker.global.error.InvalidRelationException;
+import com.project.investment_tracker.global.error.ResourceNotFoundException;
 import com.project.investment_tracker.repository.InvestmentPlanRepository;
 import com.project.investment_tracker.repository.PlanActionRepository;
 import org.springframework.stereotype.Service;
@@ -25,12 +28,12 @@ public class PlanActionService {
 
     private PlanAction findActionInPlan(Long planId, Long actionId) {
         PlanAction planAction = planActionRepository.findById(actionId)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.PLAN_ACTION_NOT_FOUND));
 
         Long actualPlanId = planAction.getInvestmentPlan().getId();
 
         if (!actualPlanId.equals(planId)) {
-            throw new IllegalStateException("해당 투자 계획에 속한 액션이 아닙니다.");
+            throw new InvalidRelationException(ErrorMessage.PLAN_ACTION_NOT_BELONG_TO_PLAN);
         }
 
         return planAction;
@@ -38,7 +41,7 @@ public class PlanActionService {
 
     public PlanActionResponse createPlanAction(Long investmentPlanId, PlanActionCreateRequest request) {
         InvestmentPlan investmentPlan = investmentPlanRepository.findById(investmentPlanId)
-                .orElseThrow();
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.INVESTMENT_PLAN_NOT_FOUND));
 
         PlanAction planAction = new PlanAction(
                 investmentPlan,
