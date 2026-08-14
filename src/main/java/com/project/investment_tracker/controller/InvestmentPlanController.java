@@ -4,6 +4,7 @@ import com.project.investment_tracker.dto.InvestmentPlanCreateRequest;
 import com.project.investment_tracker.dto.InvestmentPlanResponse;
 import com.project.investment_tracker.dto.InvestmentPlanUpdateRequest;
 import com.project.investment_tracker.service.InvestmentPlanService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public class InvestmentPlanController {
     }
 
     @PostMapping
-    public InvestmentPlanResponse createPlan(@RequestBody InvestmentPlanCreateRequest investmentPlanCreateRequest) {
+    public InvestmentPlanResponse createPlan(@Valid @RequestBody InvestmentPlanCreateRequest investmentPlanCreateRequest) {
         return investmentPlanService.createInvestmentPlan(investmentPlanCreateRequest);
     }
 
@@ -33,7 +34,7 @@ public class InvestmentPlanController {
     }
 
     @PutMapping("/{id}")
-    public InvestmentPlanResponse updatePlan(@PathVariable Long id, @RequestBody InvestmentPlanUpdateRequest investmentPlanUpdateRequest) {
+    public InvestmentPlanResponse updatePlan(@PathVariable Long id, @Valid @RequestBody InvestmentPlanUpdateRequest investmentPlanUpdateRequest) {
         return investmentPlanService.updatePlan(id, investmentPlanUpdateRequest);
     }
 

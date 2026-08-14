@@ -4,6 +4,7 @@ import com.project.investment_tracker.dto.TradeCreateRequest;
 import com.project.investment_tracker.dto.TradeResponse;
 import com.project.investment_tracker.dto.TradeUpdateRequest;
 import com.project.investment_tracker.service.TradeService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public class TradeController {
     }
 
     @PostMapping
-    public TradeResponse createTrade(@RequestBody TradeCreateRequest request) {
+    public TradeResponse createTrade(@Valid @RequestBody TradeCreateRequest request) {
         return tradeService.createTrade(request);
     }
 
@@ -34,7 +35,7 @@ public class TradeController {
     }
 
     @PutMapping("/{tradeId}")
-    public TradeResponse updateTrade(@PathVariable Long tradeId, @RequestBody TradeUpdateRequest request) {
+    public TradeResponse updateTrade(@PathVariable Long tradeId, @Valid @RequestBody TradeUpdateRequest request) {
         return tradeService.updateTrade(tradeId, request);
     }
 

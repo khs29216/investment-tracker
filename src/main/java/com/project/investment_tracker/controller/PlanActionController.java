@@ -4,6 +4,7 @@ import com.project.investment_tracker.dto.PlanActionCreateRequest;
 import com.project.investment_tracker.dto.PlanActionResponse;
 import com.project.investment_tracker.dto.PlanActionUpdateRequest;
 import com.project.investment_tracker.service.PlanActionService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public class PlanActionController {
     }
 
     @PostMapping
-    public PlanActionResponse createPlanAction(@PathVariable Long planId, @RequestBody PlanActionCreateRequest request) {
+    public PlanActionResponse createPlanAction(@PathVariable Long planId, @Valid @RequestBody PlanActionCreateRequest request) {
         return planActionService.createPlanAction(planId, request);
     }
 
@@ -37,7 +38,7 @@ public class PlanActionController {
     public PlanActionResponse updatePlanAction(
             @PathVariable Long planId,
             @PathVariable Long actionId,
-            @RequestBody PlanActionUpdateRequest request
+            @Valid @RequestBody PlanActionUpdateRequest request
     ) {
         return planActionService.updatePlanAction(planId, actionId, request);
     }
