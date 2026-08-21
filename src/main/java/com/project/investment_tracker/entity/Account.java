@@ -24,6 +24,11 @@ public class Account {
         this.cashBalance = cashBalance;
     }
 
+    public void update(String accountName, Integer cashBalance) {
+        this.accountName = accountName;
+        this.cashBalance = cashBalance;
+    }
+
     public Long getId() {
         return id;
     }
