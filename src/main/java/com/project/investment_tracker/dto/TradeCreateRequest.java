@@ -4,10 +4,11 @@ import com.project.investment_tracker.entity.TradeType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record TradeCreateRequest(
+        @NotNull(message = "계좌 ID는 필수입니다.")
+        Long accountId,
         @NotBlank(message = "종목명은 필수입니다.")
         String stockName,
         @NotBlank(message = "종목 코드는 필수입니다.")
@@ -21,7 +22,7 @@ public record TradeCreateRequest(
         @Positive(message = "거래 수량은 양수여야 합니다.")
         Integer quantity,
         @NotNull(message = "거래일은 필수입니다.")
-        LocalDate tradeDate,
+        LocalDateTime tradeDateTime,
         String memo,
         Long planActionId
 ) {

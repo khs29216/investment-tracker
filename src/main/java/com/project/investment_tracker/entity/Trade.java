@@ -2,13 +2,17 @@ package com.project.investment_tracker.entity;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 public class Trade {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
 
     private String stockName;
     private String stockSymbol;
@@ -19,7 +23,7 @@ public class Trade {
     private Integer tradePrice;
     private Integer quantity;
 
-    private LocalDate tradeDate;
+    private LocalDateTime tradeDateTime;
 
     private String memo;
 
@@ -31,21 +35,23 @@ public class Trade {
     }
 
     public Trade(
+            Account account,
             String stockName,
             String stockSymbol,
             TradeType tradeType,
             Integer tradePrice,
             Integer quantity,
-            LocalDate tradeDate,
+            LocalDateTime tradeDateTime,
             String memo,
             PlanAction planAction
     ) {
+        this.account = account;
         this.stockName = stockName;
         this.stockSymbol = stockSymbol;
         this.tradeType = tradeType;
         this.tradePrice = tradePrice;
         this.quantity = quantity;
-        this.tradeDate = tradeDate;
+        this.tradeDateTime = tradeDateTime;
         this.memo = memo;
         this.planAction = planAction;
     }
@@ -56,7 +62,7 @@ public class Trade {
             TradeType tradeType,
             Integer tradePrice,
             Integer quantity,
-            LocalDate tradeDate,
+            LocalDateTime tradeDateTime,
             String memo,
             PlanAction planAction
     ) {
@@ -65,13 +71,17 @@ public class Trade {
         this.tradeType = tradeType;
         this.tradePrice = tradePrice;
         this.quantity = quantity;
-        this.tradeDate = tradeDate;
+        this.tradeDateTime = tradeDateTime;
         this.memo = memo;
         this.planAction = planAction;
     }
 
     public Long getId() {
         return id;
+    }
+
+    public Account getAccount() {
+        return account;
     }
 
     public String getStockName() {
@@ -94,8 +104,8 @@ public class Trade {
         return quantity;
     }
 
-    public LocalDate getTradeDate() {
-        return tradeDate;
+    public LocalDateTime getTradeDateTime() {
+        return tradeDateTime;
     }
 
     public String getMemo() {

@@ -1,5 +1,7 @@
 package com.project.investment_tracker.entity;
 
+import com.project.investment_tracker.global.error.BadRequestException;
+import com.project.investment_tracker.global.error.ErrorMessage;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -27,6 +29,18 @@ public class Account {
     public void update(String accountName, Integer cashBalance) {
         this.accountName = accountName;
         this.cashBalance = cashBalance;
+    }
+
+    public void decreaseCash(Integer amount) {
+        if (cashBalance < amount) {
+            throw new BadRequestException(ErrorMessage.INSUFFICIENT_CASH_BALANCE);
+        }
+
+        this.cashBalance -= amount;
+    }
+
+    public void increaseCash(Integer amount) {
+        this.cashBalance += amount;
     }
 
     public Long getId() {

@@ -1,5 +1,7 @@
 package com.project.investment_tracker.entity;
 
+import com.project.investment_tracker.global.error.BadRequestException;
+import com.project.investment_tracker.global.error.ErrorMessage;
 import jakarta.persistence.*;
 
 @Entity
@@ -39,6 +41,32 @@ public class StockHolding {
         this.quantity = quantity;
         this.averagePrice = averagePrice;
         this.totalInvestmentAmount = averagePrice * quantity;
+    }
+
+    public void buy(Integer price, Integer quantity) {
+        int additionalAmount = price * quantity;
+        int updatedTotalInvestmentAmount = this.totalInvestmentAmount + additionalAmount;
+        int updatedQuantity = this.quantity + quantity;
+
+        this.quantity = updatedQuantity;
+        this.totalInvestmentAmount = updatedTotalInvestmentAmount;
+        this.averagePrice = updatedTotalInvestmentAmount / updatedQuantity;
+    }
+
+    public void sell(Integer quantity) {
+        if (this.quantity < quantity) {
+            throw new BadRequestException(ErrorMessage.INSUFFICIENT_STOCK_QUANTITY);
+        }
+
+        int soldInvestmentAmount = this.averagePrice * quantity;
+
+        this.quantity -= quantity;
+        this.totalInvestmentAmount -= soldInvestmentAmount;
+
+        if (this.quantity == 0) {
+            this.averagePrice = 0;
+            this.totalInvestmentAmount = 0;
+        }
     }
 
     public Long getId() {
