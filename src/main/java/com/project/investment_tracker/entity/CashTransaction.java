@@ -2,7 +2,7 @@ package com.project.investment_tracker.entity;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 public class CashTransaction {
@@ -20,7 +20,7 @@ public class CashTransaction {
 
     private Integer amount;
 
-    private LocalDate transactionDate;
+    private LocalDateTime transactionDateTime;
 
     private String memo;
 
@@ -31,13 +31,13 @@ public class CashTransaction {
             Account account,
             CashTransactionType type,
             Integer amount,
-            LocalDate transactionDate,
+            LocalDateTime transactionDateTime,
             String memo
     ) {
         this.account = account;
         this.type = type;
         this.amount = amount;
-        this.transactionDate = transactionDate;
+        this.transactionDateTime = transactionDateTime;
         this.memo = memo;
     }
 
@@ -57,8 +57,8 @@ public class CashTransaction {
         return amount;
     }
 
-    public LocalDate getTransactionDate() {
-        return transactionDate;
+    public LocalDateTime getTransactionDateTime() {
+        return transactionDateTime;
     }
 
     public String getMemo() {
