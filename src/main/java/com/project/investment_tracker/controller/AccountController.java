@@ -2,6 +2,7 @@ package com.project.investment_tracker.controller;
 
 import com.project.investment_tracker.dto.AccountCreateRequest;
 import com.project.investment_tracker.dto.AccountResponse;
+import com.project.investment_tracker.dto.AccountSummaryResponse;
 import com.project.investment_tracker.dto.AccountUpdateRequest;
 import com.project.investment_tracker.service.AccountService;
 import jakarta.validation.Valid;
@@ -36,5 +37,11 @@ public class AccountController {
     public void deleteAccount(@PathVariable Long id) {
         accountService.deleteAccount(id);
     }
+
+    @GetMapping("/{id}/summary")
+    public AccountSummaryResponse getAccountSummary(@PathVariable Long id) {
+        return accountService.getAccountSummary(id);
+    }
+
 }
 
