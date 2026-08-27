@@ -66,7 +66,7 @@ public class AccountService {
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.ACCOUNT_NOT_FOUND));
 
-        List<StockHolding> stockHoldings = stockHoldingRepository.findByAccountId(id);
+        List<StockHolding> stockHoldings = getStockHoldings(account);
 
         int totalInvestmentAmount = stockHoldings.stream()
                 .mapToInt(StockHolding::getTotalInvestmentAmount)
@@ -84,4 +84,9 @@ public class AccountService {
                 stockHoldingResponses
         );
     }
+
+    private List<StockHolding> getStockHoldings(Account account) {
+        return stockHoldingRepository.findByAccountId(account.getId());
+    }
+
 }
