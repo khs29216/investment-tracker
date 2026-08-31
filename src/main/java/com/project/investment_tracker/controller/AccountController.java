@@ -1,9 +1,11 @@
 package com.project.investment_tracker.controller;
 
 import com.project.investment_tracker.dto.AccountCreateRequest;
+import com.project.investment_tracker.dto.AccountDashboardResponse;
 import com.project.investment_tracker.dto.AccountResponse;
 import com.project.investment_tracker.dto.AccountSummaryResponse;
 import com.project.investment_tracker.dto.AccountUpdateRequest;
+import com.project.investment_tracker.service.AccountDashboardService;
 import com.project.investment_tracker.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -13,9 +15,14 @@ import org.springframework.web.bind.annotation.*;
 public class AccountController {
 
     private final AccountService accountService;
+    private final AccountDashboardService accountDashboardService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(
+            AccountService accountService,
+            AccountDashboardService accountDashboardService
+    ) {
         this.accountService = accountService;
+        this.accountDashboardService = accountDashboardService;
     }
 
     @PostMapping
@@ -43,5 +50,9 @@ public class AccountController {
         return accountService.getAccountSummary(id);
     }
 
-}
+    @GetMapping("/{id}/dashboard")
+    public AccountDashboardResponse getAccountDashboard(@PathVariable Long id) {
+        return accountDashboardService.getAccountDashboard(id);
+    }
 
+}
