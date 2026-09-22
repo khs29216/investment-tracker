@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import './App.css'
 
 const DASHBOARD_API_URL = 'http://localhost:8080/api/account/1/dashboard'
+const CASH_TRANSACTION_API_URL = 'http://localhost:8080/api/cash-transactions'
+const ACCOUNT_ID = 1
 
 function formatCurrency(value) {
   return `${Number(value).toLocaleString()} won`
@@ -14,10 +16,20 @@ function formatRate(value) {
 function App() {
   const [dashboard, setDashboard] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCashModalOpen, setIsCashModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [formMessage, setFormMessage] = useState('')
+  const [cashForm, setCashForm] = useState({
+    type: 'DEPOSIT',
+    amount: '',
+    memo: '',
+  })
 
-  useEffect(() => {
-    fetch(DASHBOARD_API_URL)
+  const loadDashboard = () => {
+    setIsLoading(true)
+
+    return fetch(DASHBOARD_API_URL)
       .then((response) => {
         if (!response.ok) {
           throw new Error('Failed to load account dashboard.')
@@ -35,7 +47,62 @@ function App() {
       .finally(() => {
         setIsLoading(false)
       })
+  }
+
+  useEffect(() => {
+    loadDashboard()
   }, [])
+
+  const handleCashFormChange = (event) => {
+    const { name, value } = event.target
+
+    setCashForm((previousForm) => ({
+      ...previousForm,
+      [name]: value,
+    }))
+  }
+
+  const handleCashTransactionSubmit = (event) => {
+    event.preventDefault()
+    setIsSubmitting(true)
+    setFormMessage('')
+
+    fetch(CASH_TRANSACTION_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accountId: ACCOUNT_ID,
+        type: cashForm.type,
+        amount: Number(cashForm.amount),
+        memo: cashForm.memo,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to save cash transaction.')
+        }
+
+        return response.json()
+      })
+      .then(() => {
+        setCashForm({
+          type: 'DEPOSIT',
+          amount: '',
+          memo: '',
+        })
+        setFormMessage('')
+        setIsCashModalOpen(false)
+        return loadDashboard()
+      })
+      .catch((error) => {
+        setFormMessage(error.message)
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
+  }
 
   if (isLoading) {
     return <main className="dashboard-page">Loading dashboard...</main>
@@ -59,9 +126,21 @@ function App() {
           <p className="eyebrow">Investment Tracker</p>
           <h1>{dashboard.accountName}</h1>
         </div>
-        <div className="return-summary">
-          <span>Total Return</span>
-          <strong>{formatRate(dashboard.totalReturnRate)}</strong>
+        <div className="header-actions">
+          <div className="return-summary">
+            <span>Total Return</span>
+            <strong>{formatRate(dashboard.totalReturnRate)}</strong>
+          </div>
+          <button
+            type="button"
+            className="cash-action-button"
+            onClick={() => {
+              setFormMessage('')
+              setIsCashModalOpen(true)
+            }}
+          >
+            Cash Transaction
+          </button>
         </div>
       </header>
 
@@ -117,6 +196,76 @@ function App() {
           </table>
         </div>
       </section>
+
+      {isCashModalOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="cash-modal-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="cash-modal-title">Cash Transaction</h2>
+                <p>Deposit or withdraw cash from this account.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={() => setIsCashModalOpen(false)}
+                aria-label="Close cash transaction modal"
+              >
+                X
+              </button>
+            </div>
+
+            <form className="cash-form" onSubmit={handleCashTransactionSubmit}>
+              <label>
+                Type
+                <select name="type" value={cashForm.type} onChange={handleCashFormChange}>
+                  <option value="DEPOSIT">Deposit</option>
+                  <option value="WITHDRAWAL">Withdrawal</option>
+                </select>
+              </label>
+
+              <label>
+                Amount
+                <input
+                  type="number"
+                  name="amount"
+                  min="1"
+                  value={cashForm.amount}
+                  onChange={handleCashFormChange}
+                  placeholder="1000000"
+                  required
+                />
+              </label>
+
+              <label>
+                Memo
+                <input
+                  type="text"
+                  name="memo"
+                  value={cashForm.memo}
+                  onChange={handleCashFormChange}
+                  placeholder="Initial deposit"
+                />
+              </label>
+
+              {formMessage && <p className="form-message">{formMessage}</p>}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsCashModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary-button" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </main>
   )
 }
