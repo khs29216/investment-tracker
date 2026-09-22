@@ -293,10 +293,7 @@ function App() {
       body: JSON.stringify({
         stockName: planForm.stockName,
         stockSymbol: planForm.stockSymbol,
-        currentPrice: 1,
         totalBudget: Number(planForm.totalBudget),
-        holdingQuantity: 0,
-        averagePrice: 0,
         reason: planForm.reason,
       }),
     })

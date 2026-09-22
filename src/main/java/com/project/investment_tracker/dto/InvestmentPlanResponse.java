@@ -7,10 +7,7 @@ public record InvestmentPlanResponse (
         Long id,
         String stockName,
         String stockSymbol,
-        Integer currentPrice,
         Integer totalBudget,
-        Integer holdingQuantity,
-        Integer averagePrice,
         String reason,
         PlanStatus planStatus
 ) {
@@ -19,10 +16,7 @@ public record InvestmentPlanResponse (
                 investmentPlan.getId(),
                 investmentPlan.getStockName(),
                 investmentPlan.getStockSymbol(),
-                investmentPlan.getCurrentPrice(),
                 investmentPlan.getTotalBudget(),
-                investmentPlan.getHoldingQuantity(),
-                investmentPlan.getAveragePrice(),
                 investmentPlan.getReason(),
                 investmentPlan.getPlanStatus()
         );

@@ -25,10 +25,7 @@ public class InvestmentPlanService {
         InvestmentPlan investmentPlan = new InvestmentPlan(
                 request.stockName(),
                 request.stockSymbol(),
-                request.currentPrice(),
                 request.totalBudget(),
-                request.holdingQuantity(),
-                request.averagePrice(),
                 request.reason()
         );
         InvestmentPlan savedInvestmentPlan = investmentPlanRepository.save(investmentPlan);
@@ -58,10 +55,7 @@ public class InvestmentPlanService {
         investmentPlan.update(
                 request.stockName(),
                 request.stockSymbol(),
-                request.currentPrice(),
                 request.totalBudget(),
-                request.holdingQuantity(),
-                request.averagePrice(),
                 request.reason()
 
         );
