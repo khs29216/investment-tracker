@@ -37,6 +37,29 @@
   gap: 18px;
 }
 
+.view-switch {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.view-switch-button {
+  min-height: 40px;
+  border: 0;
+  padding: 0 14px;
+  color: var(--muted);
+  background: transparent;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.view-switch-button.active {
+  color: #fff;
+  background: #1f6f62;
+}
+
 .return-summary span,
 .summary-item span,
 .section-heading span {
@@ -112,6 +135,17 @@
   font-weight: 700;
 }
 
+.status-badge {
+  flex: 0 0 auto;
+  min-height: 22px;
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: #1f6f62 !important;
+  background: #e8f3ef;
+  font-size: 12px !important;
+  font-weight: 700;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -137,6 +171,77 @@
 
 .holdings-section {
   margin-top: 32px;
+}
+
+.plans-section {
+  margin-top: 32px;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--panel);
+  text-align: left;
+}
+
+.plan-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-card h3 {
+  margin: 0 0 4px;
+  color: var(--text-h);
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.plan-card-header span,
+.plan-meta dt,
+.plan-reason {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.plan-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.plan-meta div {
+  min-width: 0;
+}
+
+.plan-meta dt,
+.plan-meta dd {
+  margin: 0;
+}
+
+.plan-meta dd {
+  margin-top: 4px;
+  color: var(--text-h);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.plan-reason {
+  min-height: 36px;
+  margin: 0;
+  line-height: 1.4;
 }
 
 .section-heading {
@@ -168,14 +273,24 @@
 }
 
 .cash-form input,
-.cash-form select {
+.cash-form select,
+.cash-form textarea {
   width: 100%;
-  min-height: 42px;
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 9px 11px;
   color: var(--text-h);
   background: #fff;
+}
+
+.cash-form input,
+.cash-form select {
+  min-height: 42px;
+}
+
+.cash-form textarea {
+  min-height: 92px;
+  resize: vertical;
 }
 
 .form-message {
@@ -382,6 +497,7 @@ tbody tr:last-child td {
 
   .header-actions {
     width: 100%;
+    flex-wrap: wrap;
     justify-content: space-between;
   }
 
@@ -391,6 +507,10 @@ tbody tr:last-child td {
 
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .plan-grid {
+    grid-template-columns: 1fr;
   }
 
   .history-actions {

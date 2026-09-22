@@ -60,9 +60,11 @@ function formatLocalDateTime(date) {
 }
 
 function App() {
+  const [currentView, setCurrentView] = useState('account')
   const [dashboard, setDashboard] = useState(null)
   const [trades, setTrades] = useState([])
   const [cashTransactions, setCashTransactions] = useState([])
+  const [investmentPlans, setInvestmentPlans] = useState([])
   const [planActions, setPlanActions] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -70,9 +72,12 @@ function App() {
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false)
   const [isTradeHistoryModalOpen, setIsTradeHistoryModalOpen] = useState(false)
   const [isCashHistoryModalOpen, setIsCashHistoryModalOpen] = useState(false)
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
+  const [selectedPlanId, setSelectedPlanId] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [formMessage, setFormMessage] = useState('')
   const [tradeMessage, setTradeMessage] = useState('')
+  const [planMessage, setPlanMessage] = useState('')
   const [cashForm, setCashForm] = useState({
     type: 'DEPOSIT',
     amount: '',
@@ -87,6 +92,12 @@ function App() {
     quantity: '',
     memo: '',
   })
+  const [planForm, setPlanForm] = useState({
+    stockName: '',
+    stockSymbol: '',
+    totalBudget: '',
+    reason: '',
+  })
 
   const loadPageData = () => {
     setIsLoading(true)
@@ -95,11 +106,12 @@ function App() {
       fetchJson(DASHBOARD_API_URL),
       fetchJson(TRADE_API_URL),
       fetchJson(CASH_TRANSACTION_LIST_API_URL),
-      fetchPlanActions(),
+      fetchPlansAndActions(),
     ])
-      .then(([dashboardData, tradeData, cashTransactionData, planActionData]) => {
+      .then(([dashboardData, tradeData, cashTransactionData, planData]) => {
         setDashboard(dashboardData)
-        setPlanActions(planActionData)
+        setInvestmentPlans(planData.plans)
+        setPlanActions(planData.actions)
         setTrades(
           tradeData
             .filter((trade) => trade.accountId === ACCOUNT_ID)
@@ -161,6 +173,15 @@ function App() {
     }
 
     setTradeForm((previousForm) => ({
+      ...previousForm,
+      [name]: value,
+    }))
+  }
+
+  const handlePlanFormChange = (event) => {
+    const { name, value } = event.target
+
+    setPlanForm((previousForm) => ({
       ...previousForm,
       [name]: value,
     }))
@@ -259,6 +280,52 @@ function App() {
       })
   }
 
+  const handlePlanSubmit = (event) => {
+    event.preventDefault()
+    setIsSubmitting(true)
+    setPlanMessage('')
+
+    fetch(PLAN_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        stockName: planForm.stockName,
+        stockSymbol: planForm.stockSymbol,
+        currentPrice: 1,
+        totalBudget: Number(planForm.totalBudget),
+        holdingQuantity: 0,
+        averagePrice: 0,
+        reason: planForm.reason,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to save investment plan.')
+        }
+
+        return response.json()
+      })
+      .then(() => {
+        setPlanForm({
+          stockName: '',
+          stockSymbol: '',
+          totalBudget: '',
+          reason: '',
+        })
+        setPlanMessage('')
+        setIsPlanModalOpen(false)
+        return loadPageData()
+      })
+      .catch((error) => {
+        setPlanMessage(error.message)
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
+  }
+
   if (isLoading) {
     return <main className="dashboard-page">Loading dashboard...</main>
   }
@@ -274,124 +341,219 @@ function App() {
     )
   }
 
+  const selectedPlan = investmentPlans.find((plan) => plan.id === selectedPlanId)
+  const selectedPlanActions = selectedPlan
+    ? planActions.filter((action) => action.investmentPlanId === selectedPlan.id)
+    : []
+
   return (
     <main className="dashboard-page">
       <header className="dashboard-header">
         <div>
           <p className="eyebrow">Investment Tracker</p>
-          <h1>{dashboard.accountName}</h1>
+          <h1>{currentView === 'account' ? dashboard.accountName : 'Plan Dashboard'}</h1>
         </div>
         <div className="header-actions">
-          <div className="return-summary">
-            <span>Total Return</span>
-            <strong className={getNumberToneClassName(dashboard.totalReturnRate)}>
-              {formatRate(dashboard.totalReturnRate)}
-            </strong>
-          </div>
-          <button
-            type="button"
-            className="cash-action-button"
-            onClick={() => {
-              setTradeMessage('')
-              setIsTradeModalOpen(true)
-            }}
-          >
-            Trade
-          </button>
-          <button
-            type="button"
-            className="cash-action-button"
-            onClick={() => {
-              setFormMessage('')
-              setIsCashModalOpen(true)
-            }}
-          >
-            Cash Transaction
-          </button>
+          <nav className="view-switch" aria-label="Dashboard views">
+            <button
+              type="button"
+              className={currentView === 'account' ? 'view-switch-button active' : 'view-switch-button'}
+              onClick={() => setCurrentView('account')}
+            >
+              Account
+            </button>
+            <button
+              type="button"
+              className={currentView === 'plans' ? 'view-switch-button active' : 'view-switch-button'}
+              onClick={() => setCurrentView('plans')}
+            >
+              Plans
+            </button>
+          </nav>
+
+          {currentView === 'account' ? (
+            <>
+              <div className="return-summary">
+                <span>Total Return</span>
+                <strong className={getNumberToneClassName(dashboard.totalReturnRate)}>
+                  {formatRate(dashboard.totalReturnRate)}
+                </strong>
+              </div>
+              <button
+                type="button"
+                className="cash-action-button"
+                onClick={() => {
+                  setTradeMessage('')
+                  setIsTradeModalOpen(true)
+                }}
+              >
+                Trade
+              </button>
+              <button
+                type="button"
+                className="cash-action-button"
+                onClick={() => {
+                  setFormMessage('')
+                  setIsCashModalOpen(true)
+                }}
+              >
+                Cash Transaction
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="cash-action-button"
+              onClick={() => {
+                setPlanMessage('')
+                setIsPlanModalOpen(true)
+              }}
+            >
+              New Plan
+            </button>
+          )}
         </div>
       </header>
 
-      <section className="summary-grid" aria-label="Account summary">
-        <SummaryItem label="Cash Balance" value={formatCurrency(dashboard.cashBalance)} />
-        <SummaryItem
-          label="Investment Amount"
-          value={formatCurrency(dashboard.totalInvestmentAmount)}
-        />
-        <SummaryItem
-          label="Evaluation Amount"
-          value={formatCurrency(dashboard.totalEvaluationAmount)}
-        />
-        <SummaryItem
-          label="Profit/Loss"
-          value={formatCurrency(dashboard.totalProfitLoss)}
-          valueClassName={getNumberToneClassName(dashboard.totalProfitLoss)}
-        />
-      </section>
+      {currentView === 'account' && (
+        <>
+          <section className="summary-grid" aria-label="Account summary">
+            <SummaryItem label="Cash Balance" value={formatCurrency(dashboard.cashBalance)} />
+            <SummaryItem
+              label="Investment Amount"
+              value={formatCurrency(dashboard.totalInvestmentAmount)}
+            />
+            <SummaryItem
+              label="Evaluation Amount"
+              value={formatCurrency(dashboard.totalEvaluationAmount)}
+            />
+            <SummaryItem
+              label="Profit/Loss"
+              value={formatCurrency(dashboard.totalProfitLoss)}
+              valueClassName={getNumberToneClassName(dashboard.totalProfitLoss)}
+            />
+          </section>
 
-      <section className="holdings-section">
+          <section className="holdings-section">
+            <div className="section-heading">
+              <h2>Stock Holdings</h2>
+              <span>{dashboard.stockHoldings.length} items</span>
+            </div>
+
+            {dashboard.stockHoldings.length > 0 ? (
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Symbol</th>
+                      <th>Qty</th>
+                      <th>Avg Price</th>
+                      <th>Current Price</th>
+                      <th>Investment</th>
+                      <th>Evaluation</th>
+                      <th>Profit/Loss</th>
+                      <th>Return</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dashboard.stockHoldings.map((stock) => (
+                      <tr key={stock.stockSymbol}>
+                        <td>{stock.stockName}</td>
+                        <td>{stock.stockSymbol}</td>
+                        <td>{stock.quantity.toLocaleString()}</td>
+                        <td>{formatCurrency(stock.averagePrice)}</td>
+                        <td>{formatCurrency(stock.currentPrice)}</td>
+                        <td>{formatCurrency(stock.investmentAmount)}</td>
+                        <td>{formatCurrency(stock.evaluationAmount)}</td>
+                        <td className={getNumberToneClassName(stock.profitLoss)}>
+                          {formatCurrency(stock.profitLoss)}
+                        </td>
+                        <td className={getNumberToneClassName(stock.returnRate)}>
+                          {formatRate(stock.returnRate)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="table-empty-state">No stock holdings yet.</div>
+            )}
+
+            <div className="history-actions" aria-label="Account history actions">
+              <button
+                type="button"
+                className="history-button"
+                onClick={() => setIsTradeHistoryModalOpen(true)}
+              >
+                Trade History
+              </button>
+              <button
+                type="button"
+                className="history-button"
+                onClick={() => setIsCashHistoryModalOpen(true)}
+              >
+                Cash History
+              </button>
+            </div>
+          </section>
+        </>
+      )}
+
+      {currentView === 'plans' && (
+        <section className="plans-section">
         <div className="section-heading">
-          <h2>Stock Holdings</h2>
-          <span>{dashboard.stockHoldings.length} items</span>
+          <h2>Investment Plans</h2>
+          <span>{investmentPlans.length} items</span>
         </div>
 
-        {dashboard.stockHoldings.length > 0 ? (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Symbol</th>
-                  <th>Qty</th>
-                  <th>Avg Price</th>
-                  <th>Current Price</th>
-                  <th>Investment</th>
-                  <th>Evaluation</th>
-                  <th>Profit/Loss</th>
-                  <th>Return</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dashboard.stockHoldings.map((stock) => (
-                  <tr key={stock.stockSymbol}>
-                    <td>{stock.stockName}</td>
-                    <td>{stock.stockSymbol}</td>
-                    <td>{stock.quantity.toLocaleString()}</td>
-                    <td>{formatCurrency(stock.averagePrice)}</td>
-                    <td>{formatCurrency(stock.currentPrice)}</td>
-                    <td>{formatCurrency(stock.investmentAmount)}</td>
-                    <td>{formatCurrency(stock.evaluationAmount)}</td>
-                    <td className={getNumberToneClassName(stock.profitLoss)}>
-                      {formatCurrency(stock.profitLoss)}
-                    </td>
-                    <td className={getNumberToneClassName(stock.returnRate)}>
-                      {formatRate(stock.returnRate)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {investmentPlans.length > 0 ? (
+          <div className="plan-grid">
+            {investmentPlans.map((plan) => {
+              const actionCount = planActions.filter(
+                (action) => action.investmentPlanId === plan.id,
+              ).length
+
+              return (
+                <article className="plan-card" key={plan.id}>
+                  <div className="plan-card-header">
+                    <div>
+                      <h3>{plan.stockName}</h3>
+                      <span>{plan.stockSymbol}</span>
+                    </div>
+                    <span className="status-badge">{plan.planStatus}</span>
+                  </div>
+
+                  <dl className="plan-meta">
+                    <div>
+                      <dt>Budget</dt>
+                      <dd>{formatCurrency(plan.totalBudget)}</dd>
+                    </div>
+                    <div>
+                      <dt>Actions</dt>
+                      <dd>{actionCount}</dd>
+                    </div>
+                  </dl>
+
+                  <p className="plan-reason">{plan.reason || 'No reason provided.'}</p>
+
+                  <button
+                    type="button"
+                    className="history-button"
+                    onClick={() => setSelectedPlanId(plan.id)}
+                  >
+                    View Actions
+                  </button>
+                </article>
+              )
+            })}
           </div>
         ) : (
-          <div className="table-empty-state">No stock holdings yet.</div>
+          <div className="table-empty-state">No investment plans yet.</div>
         )}
-
-        <div className="history-actions" aria-label="Account history actions">
-          <button
-            type="button"
-            className="history-button"
-            onClick={() => setIsTradeHistoryModalOpen(true)}
-          >
-            Trade History
-          </button>
-          <button
-            type="button"
-            className="history-button"
-            onClick={() => setIsCashHistoryModalOpen(true)}
-          >
-            Cash History
-          </button>
-        </div>
-      </section>
+        </section>
+      )}
 
       {isCashModalOpen && (
         <div className="modal-backdrop" role="presentation">
@@ -490,11 +652,13 @@ function App() {
                   onChange={handleTradeFormChange}
                 >
                   <option value="">No plan action</option>
-                  {planActions.map((action) => (
-                    <option value={action.id} key={action.id}>
-                      {action.stockName} · {action.actionType} · {formatCurrency(action.triggerPrice)} · {action.quantity}
-                    </option>
-                  ))}
+                  {planActions
+                    .filter((action) => action.actionType !== 'HOLD')
+                    .map((action) => (
+                      <option value={action.id} key={action.id}>
+                        {action.stockName} · {action.actionType} · {formatCurrency(action.triggerPrice)} · {action.quantity}
+                      </option>
+                    ))}
                 </select>
               </label>
 
@@ -675,6 +839,132 @@ function App() {
           </section>
         </div>
       )}
+
+      {isPlanModalOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="plan-modal-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="plan-modal-title">New Investment Plan</h2>
+                <p>Create a rational plan before trading.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={() => setIsPlanModalOpen(false)}
+                aria-label="Close investment plan modal"
+              >
+                X
+              </button>
+            </div>
+
+            <form className="cash-form" onSubmit={handlePlanSubmit}>
+              <label>
+                Stock Name
+                <input
+                  type="text"
+                  name="stockName"
+                  value={planForm.stockName}
+                  onChange={handlePlanFormChange}
+                  placeholder="Samsung Electronics"
+                  required
+                />
+              </label>
+
+              <label>
+                Stock Symbol
+                <input
+                  type="text"
+                  name="stockSymbol"
+                  value={planForm.stockSymbol}
+                  onChange={handlePlanFormChange}
+                  placeholder="005930"
+                  required
+                />
+              </label>
+
+              <label>
+                Total Budget
+                <input
+                  type="number"
+                  name="totalBudget"
+                  min="1"
+                  value={planForm.totalBudget}
+                  onChange={handlePlanFormChange}
+                  placeholder="1000000"
+                  required
+                />
+              </label>
+
+              <label>
+                Reason
+                <textarea
+                  name="reason"
+                  value={planForm.reason}
+                  onChange={handlePlanFormChange}
+                  placeholder="Why this plan makes sense"
+                  required
+                />
+              </label>
+
+              {planMessage && <p className="form-message">{planMessage}</p>}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsPlanModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary-button" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {selectedPlan && (
+        <div className="modal-backdrop" role="presentation">
+          <section
+            className="modal history-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="plan-actions-modal-title"
+          >
+            <div className="modal-header">
+              <div>
+                <h2 id="plan-actions-modal-title">{selectedPlan.stockName} Actions</h2>
+                <p>{selectedPlan.stockSymbol} plan action list.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={() => setSelectedPlanId(null)}
+                aria-label="Close plan actions modal"
+              >
+                X
+              </button>
+            </div>
+
+            <ActivityPanel title="Plan Actions" emptyMessage="No plan actions yet.">
+              {selectedPlanActions.map((action) => (
+                <div className="activity-row" key={action.id}>
+                  <div>
+                    <strong>{action.actionType}</strong>
+                    <span>
+                      {formatCurrency(action.triggerPrice)} · {action.quantity} shares · {action.actionStatus}
+                    </span>
+                  </div>
+                  <div className="activity-value">{action.memo || '-'}</div>
+                </div>
+              ))}
+            </ActivityPanel>
+          </section>
+        </div>
+      )}
     </main>
   )
 }
@@ -689,17 +979,19 @@ function fetchJson(url) {
   })
 }
 
-function fetchPlanActions() {
+function fetchPlansAndActions() {
   return fetchJson(PLAN_API_URL).then((plans) => {
     if (plans.length === 0) {
-      return []
+      return {
+        plans: [],
+        actions: [],
+      }
     }
 
     return Promise.all(
       plans.map((plan) =>
         fetchJson(`${PLAN_API_URL}/${plan.id}/actions`).then((actions) =>
           actions
-            .filter((action) => action.actionType !== 'HOLD')
             .map((action) => ({
               ...action,
               stockName: plan.stockName,
@@ -707,11 +999,12 @@ function fetchPlanActions() {
             })),
         ),
       ),
-    ).then((actionGroups) =>
-      actionGroups
+    ).then((actionGroups) => ({
+      plans,
+      actions: actionGroups
         .flat()
         .sort((a, b) => a.stockName.localeCompare(b.stockName) || a.id - b.id),
-    )
+    }))
   })
 }
 
