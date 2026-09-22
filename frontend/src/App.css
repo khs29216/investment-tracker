@@ -331,6 +331,12 @@
   margin-bottom: 18px;
 }
 
+.modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .modal-header h2 {
   margin: 0 0 6px;
 }

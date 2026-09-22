@@ -73,11 +73,13 @@ function App() {
   const [isTradeHistoryModalOpen, setIsTradeHistoryModalOpen] = useState(false)
   const [isCashHistoryModalOpen, setIsCashHistoryModalOpen] = useState(false)
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
+  const [isPlanActionModalOpen, setIsPlanActionModalOpen] = useState(false)
   const [selectedPlanId, setSelectedPlanId] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [formMessage, setFormMessage] = useState('')
   const [tradeMessage, setTradeMessage] = useState('')
   const [planMessage, setPlanMessage] = useState('')
+  const [planActionMessage, setPlanActionMessage] = useState('')
   const [cashForm, setCashForm] = useState({
     type: 'DEPOSIT',
     amount: '',
@@ -97,6 +99,12 @@ function App() {
     stockSymbol: '',
     totalBudget: '',
     reason: '',
+  })
+  const [planActionForm, setPlanActionForm] = useState({
+    actionType: 'BUY',
+    triggerPrice: '',
+    quantity: '',
+    memo: '',
   })
 
   const loadPageData = () => {
@@ -182,6 +190,15 @@ function App() {
     const { name, value } = event.target
 
     setPlanForm((previousForm) => ({
+      ...previousForm,
+      [name]: value,
+    }))
+  }
+
+  const handlePlanActionFormChange = (event) => {
+    const { name, value } = event.target
+
+    setPlanActionForm((previousForm) => ({
       ...previousForm,
       [name]: value,
     }))
@@ -317,6 +334,54 @@ function App() {
       })
       .catch((error) => {
         setPlanMessage(error.message)
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
+  }
+
+  const handlePlanActionSubmit = (event) => {
+    event.preventDefault()
+
+    if (!selectedPlan) {
+      return
+    }
+
+    setIsSubmitting(true)
+    setPlanActionMessage('')
+
+    fetch(`${PLAN_API_URL}/${selectedPlan.id}/actions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        actionType: planActionForm.actionType,
+        triggerPrice: Number(planActionForm.triggerPrice),
+        quantity: Number(planActionForm.quantity),
+        memo: planActionForm.memo,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to save plan action.')
+        }
+
+        return response.json()
+      })
+      .then(() => {
+        setPlanActionForm({
+          actionType: 'BUY',
+          triggerPrice: '',
+          quantity: '',
+          memo: '',
+        })
+        setPlanActionMessage('')
+        setIsPlanActionModalOpen(false)
+        return loadPageData()
+      })
+      .catch((error) => {
+        setPlanActionMessage(error.message)
       })
       .finally(() => {
         setIsSubmitting(false)
@@ -936,14 +1001,29 @@ function App() {
                 <h2 id="plan-actions-modal-title">{selectedPlan.stockName} Actions</h2>
                 <p>{selectedPlan.stockSymbol} plan action list.</p>
               </div>
-              <button
-                type="button"
-                className="modal-close-button"
-                onClick={() => setSelectedPlanId(null)}
-                aria-label="Close plan actions modal"
-              >
-                X
-              </button>
+              <div className="modal-header-actions">
+                <button
+                  type="button"
+                  className="history-button"
+                  onClick={() => {
+                    setPlanActionMessage('')
+                    setIsPlanActionModalOpen(true)
+                  }}
+                >
+                  Add Action
+                </button>
+                <button
+                  type="button"
+                  className="modal-close-button"
+                  onClick={() => {
+                    setSelectedPlanId(null)
+                    setIsPlanActionModalOpen(false)
+                  }}
+                  aria-label="Close plan actions modal"
+                >
+                  X
+                </button>
+              </div>
             </div>
 
             <ActivityPanel title="Plan Actions" emptyMessage="No plan actions yet.">
@@ -959,6 +1039,95 @@ function App() {
                 </div>
               ))}
             </ActivityPanel>
+          </section>
+        </div>
+      )}
+
+      {selectedPlan && isPlanActionModalOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="plan-action-modal-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="plan-action-modal-title">New Plan Action</h2>
+                <p>Add a rule to {selectedPlan.stockName}.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={() => setIsPlanActionModalOpen(false)}
+                aria-label="Close plan action modal"
+              >
+                X
+              </button>
+            </div>
+
+            <form className="cash-form" onSubmit={handlePlanActionSubmit}>
+              <label>
+                Action Type
+                <select
+                  name="actionType"
+                  value={planActionForm.actionType}
+                  onChange={handlePlanActionFormChange}
+                >
+                  <option value="BUY">Buy</option>
+                  <option value="SELL">Sell</option>
+                  <option value="HOLD">Hold</option>
+                  <option value="STOP_LOSS">Stop Loss</option>
+                </select>
+              </label>
+
+              <label>
+                Trigger Price
+                <input
+                  type="number"
+                  name="triggerPrice"
+                  min="1"
+                  value={planActionForm.triggerPrice}
+                  onChange={handlePlanActionFormChange}
+                  placeholder="65000"
+                  required
+                />
+              </label>
+
+              <label>
+                Quantity
+                <input
+                  type="number"
+                  name="quantity"
+                  min="1"
+                  value={planActionForm.quantity}
+                  onChange={handlePlanActionFormChange}
+                  placeholder="10"
+                  required
+                />
+              </label>
+
+              <label>
+                Memo
+                <input
+                  type="text"
+                  name="memo"
+                  value={planActionForm.memo}
+                  onChange={handlePlanActionFormChange}
+                  placeholder="Buy more if price reaches target"
+                />
+              </label>
+
+              {planActionMessage && <p className="form-message">{planActionMessage}</p>}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsPlanActionModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary-button" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
           </section>
         </div>
       )}
