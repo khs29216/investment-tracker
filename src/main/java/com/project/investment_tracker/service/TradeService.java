@@ -74,6 +74,10 @@ public class TradeService {
 
         Trade savedTrade = tradeRepository.save(trade);
 
+        if (planAction != null) {
+            planAction.execute();
+        }
+
         return TradeResponse.from(savedTrade);
     }
 

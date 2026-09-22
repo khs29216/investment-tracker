@@ -54,6 +54,10 @@ public class PlanAction {
         this.memo = memo;
     }
 
+    public void execute() {
+        this.actionStatus = ActionStatus.EXECUTED;
+    }
+
     public Long getId() {
         return id;
     }

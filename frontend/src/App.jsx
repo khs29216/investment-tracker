@@ -183,6 +183,10 @@ function App() {
     setTradeForm((previousForm) => ({
       ...previousForm,
       [name]: value,
+      planActionId:
+        name === 'stockName' || name === 'stockSymbol'
+          ? ''
+          : previousForm.planActionId,
     }))
   }
 
@@ -407,6 +411,23 @@ function App() {
   const selectedPlanActions = selectedPlan
     ? planActions.filter((action) => action.investmentPlanId === selectedPlan.id)
     : []
+  const availablePlanActions = planActions.filter((action) => {
+    if (action.actionType === 'HOLD') {
+      return false
+    }
+
+    const stockName = tradeForm.stockName.trim().toLowerCase()
+    const stockSymbol = tradeForm.stockSymbol.trim().toLowerCase()
+
+    if (!stockName && !stockSymbol) {
+      return false
+    }
+
+    return (
+      (!!stockName && action.stockName.toLowerCase().includes(stockName)) ||
+      (!!stockSymbol && action.stockSymbol.toLowerCase() === stockSymbol)
+    )
+  })
 
   return (
     <main className="dashboard-page">
@@ -707,32 +728,6 @@ function App() {
 
             <form className="cash-form" onSubmit={handleTradeSubmit}>
               <label>
-                Plan Action
-                <select
-                  name="planActionId"
-                  value={tradeForm.planActionId}
-                  onChange={handleTradeFormChange}
-                >
-                  <option value="">No plan action</option>
-                  {planActions
-                    .filter((action) => action.actionType !== 'HOLD')
-                    .map((action) => (
-                      <option value={action.id} key={action.id}>
-                        {action.stockName} · {action.actionType} · {formatCurrency(action.triggerPrice)} · {action.quantity}
-                      </option>
-                    ))}
-                </select>
-              </label>
-
-              <label>
-                Type
-                <select name="tradeType" value={tradeForm.tradeType} onChange={handleTradeFormChange}>
-                  <option value="BUY">Buy</option>
-                  <option value="SELL">Sell</option>
-                </select>
-              </label>
-
-              <label>
                 Stock Name
                 <input
                   type="text"
@@ -754,6 +749,30 @@ function App() {
                   placeholder="005930"
                   required
                 />
+              </label>
+
+              <label>
+                Plan Action
+                <select
+                  name="planActionId"
+                  value={tradeForm.planActionId}
+                  onChange={handleTradeFormChange}
+                >
+                  <option value="">No plan action</option>
+                  {availablePlanActions.map((action) => (
+                    <option value={action.id} key={action.id}>
+                      {action.stockName} · {action.actionType} · {formatCurrency(action.triggerPrice)} · {action.quantity}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Type
+                <select name="tradeType" value={tradeForm.tradeType} onChange={handleTradeFormChange}>
+                  <option value="BUY">Buy</option>
+                  <option value="SELL">Sell</option>
+                </select>
               </label>
 
               <label>
