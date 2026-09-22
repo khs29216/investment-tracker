@@ -412,10 +412,6 @@ function App() {
     ? planActions.filter((action) => action.investmentPlanId === selectedPlan.id)
     : []
   const availablePlanActions = planActions.filter((action) => {
-    if (action.actionType === 'HOLD') {
-      return false
-    }
-
     const stockName = tradeForm.stockName.trim().toLowerCase()
     const stockSymbol = tradeForm.stockSymbol.trim().toLowerCase()
 
@@ -1090,7 +1086,6 @@ function App() {
                 >
                   <option value="BUY">Buy</option>
                   <option value="SELL">Sell</option>
-                  <option value="HOLD">Hold</option>
                   <option value="STOP_LOSS">Stop Loss</option>
                 </select>
               </label>
