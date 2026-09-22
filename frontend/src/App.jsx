@@ -5,6 +5,7 @@ const DASHBOARD_API_URL = 'http://localhost:8080/api/account/1/dashboard'
 const CASH_TRANSACTION_API_URL = 'http://localhost:8080/api/cash-transactions'
 const CASH_TRANSACTION_LIST_API_URL = 'http://localhost:8080/api/accounts/1/cash-transactions'
 const TRADE_API_URL = 'http://localhost:8080/api/trades'
+const PLAN_API_URL = 'http://localhost:8080/api/plans'
 const ACCOUNT_ID = 1
 
 function formatCurrency(value) {
@@ -39,6 +40,14 @@ function getNumberToneClassName(value) {
   return ''
 }
 
+function getTradeTypeFromPlanAction(actionType) {
+  if (actionType === 'SELL' || actionType === 'STOP_LOSS') {
+    return 'SELL'
+  }
+
+  return 'BUY'
+}
+
 function formatLocalDateTime(date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -54,6 +63,7 @@ function App() {
   const [dashboard, setDashboard] = useState(null)
   const [trades, setTrades] = useState([])
   const [cashTransactions, setCashTransactions] = useState([])
+  const [planActions, setPlanActions] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCashModalOpen, setIsCashModalOpen] = useState(false)
@@ -69,6 +79,7 @@ function App() {
     memo: '',
   })
   const [tradeForm, setTradeForm] = useState({
+    planActionId: '',
     tradeType: 'BUY',
     stockName: '',
     stockSymbol: '',
@@ -84,9 +95,11 @@ function App() {
       fetchJson(DASHBOARD_API_URL),
       fetchJson(TRADE_API_URL),
       fetchJson(CASH_TRANSACTION_LIST_API_URL),
+      fetchPlanActions(),
     ])
-      .then(([dashboardData, tradeData, cashTransactionData]) => {
+      .then(([dashboardData, tradeData, cashTransactionData, planActionData]) => {
         setDashboard(dashboardData)
+        setPlanActions(planActionData)
         setTrades(
           tradeData
             .filter((trade) => trade.accountId === ACCOUNT_ID)
@@ -123,6 +136,29 @@ function App() {
 
   const handleTradeFormChange = (event) => {
     const { name, value } = event.target
+
+    if (name === 'planActionId') {
+      const selectedAction = planActions.find((action) => String(action.id) === value)
+
+      if (!selectedAction) {
+        setTradeForm((previousForm) => ({
+          ...previousForm,
+          planActionId: '',
+        }))
+        return
+      }
+
+      setTradeForm((previousForm) => ({
+        ...previousForm,
+        planActionId: value,
+        tradeType: getTradeTypeFromPlanAction(selectedAction.actionType),
+        stockName: selectedAction.stockName,
+        stockSymbol: selectedAction.stockSymbol,
+        tradePrice: String(selectedAction.triggerPrice),
+        quantity: String(selectedAction.quantity),
+      }))
+      return
+    }
 
     setTradeForm((previousForm) => ({
       ...previousForm,
@@ -191,7 +227,7 @@ function App() {
         quantity: Number(tradeForm.quantity),
         tradeDateTime: formatLocalDateTime(new Date()),
         memo: tradeForm.memo,
-        planActionId: null,
+        planActionId: tradeForm.planActionId ? Number(tradeForm.planActionId) : null,
       }),
     })
       .then((response) => {
@@ -203,6 +239,7 @@ function App() {
       })
       .then(() => {
         setTradeForm({
+          planActionId: '',
           tradeType: 'BUY',
           stockName: '',
           stockSymbol: '',
@@ -446,6 +483,22 @@ function App() {
 
             <form className="cash-form" onSubmit={handleTradeSubmit}>
               <label>
+                Plan Action
+                <select
+                  name="planActionId"
+                  value={tradeForm.planActionId}
+                  onChange={handleTradeFormChange}
+                >
+                  <option value="">No plan action</option>
+                  {planActions.map((action) => (
+                    <option value={action.id} key={action.id}>
+                      {action.stockName} · {action.actionType} · {formatCurrency(action.triggerPrice)} · {action.quantity}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
                 Type
                 <select name="tradeType" value={tradeForm.tradeType} onChange={handleTradeFormChange}>
                   <option value="BUY">Buy</option>
@@ -566,6 +619,7 @@ function App() {
                         {trade.tradeType}
                       </span>{' '}
                       · {trade.stockSymbol} · {formatDateTime(trade.tradeDateTime)}
+                      {trade.planActionId && <span className="planned-badge">Planned</span>}
                     </span>
                   </div>
                   <div className="activity-value">
@@ -632,6 +686,32 @@ function fetchJson(url) {
     }
 
     return response.json()
+  })
+}
+
+function fetchPlanActions() {
+  return fetchJson(PLAN_API_URL).then((plans) => {
+    if (plans.length === 0) {
+      return []
+    }
+
+    return Promise.all(
+      plans.map((plan) =>
+        fetchJson(`${PLAN_API_URL}/${plan.id}/actions`).then((actions) =>
+          actions
+            .filter((action) => action.actionType !== 'HOLD')
+            .map((action) => ({
+              ...action,
+              stockName: plan.stockName,
+              stockSymbol: plan.stockSymbol,
+            })),
+        ),
+      ),
+    ).then((actionGroups) =>
+      actionGroups
+        .flat()
+        .sort((a, b) => a.stockName.localeCompare(b.stockName) || a.id - b.id),
+    )
   })
 }
 
