@@ -3,6 +3,7 @@ import './App.css'
 
 const DASHBOARD_API_URL = 'http://localhost:8080/api/account/1/dashboard'
 const CASH_TRANSACTION_API_URL = 'http://localhost:8080/api/cash-transactions'
+const TRADE_API_URL = 'http://localhost:8080/api/trades'
 const ACCOUNT_ID = 1
 
 function formatCurrency(value) {
@@ -13,16 +14,37 @@ function formatRate(value) {
   return `${Number(value).toFixed(2)}%`
 }
 
+function formatLocalDateTime(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+
 function App() {
   const [dashboard, setDashboard] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCashModalOpen, setIsCashModalOpen] = useState(false)
+  const [isTradeModalOpen, setIsTradeModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [formMessage, setFormMessage] = useState('')
+  const [tradeMessage, setTradeMessage] = useState('')
   const [cashForm, setCashForm] = useState({
     type: 'DEPOSIT',
     amount: '',
+    memo: '',
+  })
+  const [tradeForm, setTradeForm] = useState({
+    tradeType: 'BUY',
+    stockName: '',
+    stockSymbol: '',
+    tradePrice: '',
+    quantity: '',
     memo: '',
   })
 
@@ -57,6 +79,15 @@ function App() {
     const { name, value } = event.target
 
     setCashForm((previousForm) => ({
+      ...previousForm,
+      [name]: value,
+    }))
+  }
+
+  const handleTradeFormChange = (event) => {
+    const { name, value } = event.target
+
+    setTradeForm((previousForm) => ({
       ...previousForm,
       [name]: value,
     }))
@@ -104,6 +135,56 @@ function App() {
       })
   }
 
+  const handleTradeSubmit = (event) => {
+    event.preventDefault()
+    setIsSubmitting(true)
+    setTradeMessage('')
+
+    fetch(TRADE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        accountId: ACCOUNT_ID,
+        stockName: tradeForm.stockName,
+        stockSymbol: tradeForm.stockSymbol,
+        tradeType: tradeForm.tradeType,
+        tradePrice: Number(tradeForm.tradePrice),
+        quantity: Number(tradeForm.quantity),
+        tradeDateTime: formatLocalDateTime(new Date()),
+        memo: tradeForm.memo,
+        planActionId: null,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to save trade.')
+        }
+
+        return response.json()
+      })
+      .then(() => {
+        setTradeForm({
+          tradeType: 'BUY',
+          stockName: '',
+          stockSymbol: '',
+          tradePrice: '',
+          quantity: '',
+          memo: '',
+        })
+        setTradeMessage('')
+        setIsTradeModalOpen(false)
+        return loadDashboard()
+      })
+      .catch((error) => {
+        setTradeMessage(error.message)
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
+  }
+
   if (isLoading) {
     return <main className="dashboard-page">Loading dashboard...</main>
   }
@@ -131,6 +212,16 @@ function App() {
             <span>Total Return</span>
             <strong>{formatRate(dashboard.totalReturnRate)}</strong>
           </div>
+          <button
+            type="button"
+            className="cash-action-button"
+            onClick={() => {
+              setTradeMessage('')
+              setIsTradeModalOpen(true)
+            }}
+          >
+            Trade
+          </button>
           <button
             type="button"
             className="cash-action-button"
@@ -255,6 +346,113 @@ function App() {
                   type="button"
                   className="secondary-button"
                   onClick={() => setIsCashModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="primary-button" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {isTradeModalOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="trade-modal-title">
+            <div className="modal-header">
+              <div>
+                <h2 id="trade-modal-title">Trade</h2>
+                <p>Record a buy or sell transaction.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={() => setIsTradeModalOpen(false)}
+                aria-label="Close trade modal"
+              >
+                X
+              </button>
+            </div>
+
+            <form className="cash-form" onSubmit={handleTradeSubmit}>
+              <label>
+                Type
+                <select name="tradeType" value={tradeForm.tradeType} onChange={handleTradeFormChange}>
+                  <option value="BUY">Buy</option>
+                  <option value="SELL">Sell</option>
+                </select>
+              </label>
+
+              <label>
+                Stock Name
+                <input
+                  type="text"
+                  name="stockName"
+                  value={tradeForm.stockName}
+                  onChange={handleTradeFormChange}
+                  placeholder="Samsung Electronics"
+                  required
+                />
+              </label>
+
+              <label>
+                Stock Symbol
+                <input
+                  type="text"
+                  name="stockSymbol"
+                  value={tradeForm.stockSymbol}
+                  onChange={handleTradeFormChange}
+                  placeholder="005930"
+                  required
+                />
+              </label>
+
+              <label>
+                Price
+                <input
+                  type="number"
+                  name="tradePrice"
+                  min="1"
+                  value={tradeForm.tradePrice}
+                  onChange={handleTradeFormChange}
+                  placeholder="70000"
+                  required
+                />
+              </label>
+
+              <label>
+                Quantity
+                <input
+                  type="number"
+                  name="quantity"
+                  min="1"
+                  value={tradeForm.quantity}
+                  onChange={handleTradeFormChange}
+                  placeholder="10"
+                  required
+                />
+              </label>
+
+              <label>
+                Memo
+                <input
+                  type="text"
+                  name="memo"
+                  value={tradeForm.memo}
+                  onChange={handleTradeFormChange}
+                  placeholder="Dashboard trade"
+                />
+              </label>
+
+              {tradeMessage && <p className="form-message">{tradeMessage}</p>}
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setIsTradeModalOpen(false)}
                 >
                   Cancel
                 </button>
