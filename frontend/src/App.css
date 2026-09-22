@@ -83,6 +83,22 @@
   background: var(--table-head);
 }
 
+.number-positive {
+  color: #2563eb !important;
+}
+
+.number-negative {
+  color: #c2410c !important;
+}
+
+.activity-value.cash-deposit {
+  color: #2563eb;
+}
+
+.activity-row .trade-sell {
+  color: #2563eb;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -272,6 +288,15 @@ td:first-child {
 
 tbody tr:last-child td {
   border-bottom: none;
+}
+
+.table-empty-state {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 34px 18px;
+  color: var(--muted);
+  background: var(--panel);
+  text-align: center;
 }
 
 .activity-panel {

@@ -11,12 +11,32 @@ function formatCurrency(value) {
   return `${Number(value).toLocaleString()} won`
 }
 
+function formatCashTransactionAmount(transaction) {
+  const prefix = transaction.type === 'WITHDRAWAL' ? '-' : ''
+
+  return `${prefix}${formatCurrency(transaction.amount)}`
+}
+
 function formatRate(value) {
   return `${Number(value).toFixed(2)}%`
 }
 
 function formatDateTime(value) {
   return value ? value.replace('T', ' ').slice(0, 16) : '-'
+}
+
+function getNumberToneClassName(value) {
+  const numberValue = Number(value)
+
+  if (numberValue > 0) {
+    return 'number-positive'
+  }
+
+  if (numberValue < 0) {
+    return 'number-negative'
+  }
+
+  return ''
 }
 
 function formatLocalDateTime(date) {
@@ -227,7 +247,9 @@ function App() {
         <div className="header-actions">
           <div className="return-summary">
             <span>Total Return</span>
-            <strong>{formatRate(dashboard.totalReturnRate)}</strong>
+            <strong className={getNumberToneClassName(dashboard.totalReturnRate)}>
+              {formatRate(dashboard.totalReturnRate)}
+            </strong>
           </div>
           <button
             type="button"
@@ -262,7 +284,11 @@ function App() {
           label="Evaluation Amount"
           value={formatCurrency(dashboard.totalEvaluationAmount)}
         />
-        <SummaryItem label="Profit/Loss" value={formatCurrency(dashboard.totalProfitLoss)} />
+        <SummaryItem
+          label="Profit/Loss"
+          value={formatCurrency(dashboard.totalProfitLoss)}
+          valueClassName={getNumberToneClassName(dashboard.totalProfitLoss)}
+        />
       </section>
 
       <section className="holdings-section">
@@ -271,38 +297,46 @@ function App() {
           <span>{dashboard.stockHoldings.length} items</span>
         </div>
 
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Symbol</th>
-                <th>Qty</th>
-                <th>Avg Price</th>
-                <th>Current Price</th>
-                <th>Investment</th>
-                <th>Evaluation</th>
-                <th>Profit/Loss</th>
-                <th>Return</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboard.stockHoldings.map((stock) => (
-                <tr key={stock.stockSymbol}>
-                  <td>{stock.stockName}</td>
-                  <td>{stock.stockSymbol}</td>
-                  <td>{stock.quantity.toLocaleString()}</td>
-                  <td>{formatCurrency(stock.averagePrice)}</td>
-                  <td>{formatCurrency(stock.currentPrice)}</td>
-                  <td>{formatCurrency(stock.investmentAmount)}</td>
-                  <td>{formatCurrency(stock.evaluationAmount)}</td>
-                  <td>{formatCurrency(stock.profitLoss)}</td>
-                  <td>{formatRate(stock.returnRate)}</td>
+        {dashboard.stockHoldings.length > 0 ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Symbol</th>
+                  <th>Qty</th>
+                  <th>Avg Price</th>
+                  <th>Current Price</th>
+                  <th>Investment</th>
+                  <th>Evaluation</th>
+                  <th>Profit/Loss</th>
+                  <th>Return</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {dashboard.stockHoldings.map((stock) => (
+                  <tr key={stock.stockSymbol}>
+                    <td>{stock.stockName}</td>
+                    <td>{stock.stockSymbol}</td>
+                    <td>{stock.quantity.toLocaleString()}</td>
+                    <td>{formatCurrency(stock.averagePrice)}</td>
+                    <td>{formatCurrency(stock.currentPrice)}</td>
+                    <td>{formatCurrency(stock.investmentAmount)}</td>
+                    <td>{formatCurrency(stock.evaluationAmount)}</td>
+                    <td className={getNumberToneClassName(stock.profitLoss)}>
+                      {formatCurrency(stock.profitLoss)}
+                    </td>
+                    <td className={getNumberToneClassName(stock.returnRate)}>
+                      {formatRate(stock.returnRate)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="table-empty-state">No stock holdings yet.</div>
+        )}
 
         <div className="history-actions" aria-label="Account history actions">
           <button
@@ -528,7 +562,10 @@ function App() {
                   <div>
                     <strong>{trade.stockName}</strong>
                     <span>
-                      {trade.tradeType} · {trade.stockSymbol} · {formatDateTime(trade.tradeDateTime)}
+                      <span className={trade.tradeType === 'SELL' ? 'trade-sell' : ''}>
+                        {trade.tradeType}
+                      </span>{' '}
+                      · {trade.stockSymbol} · {formatDateTime(trade.tradeDateTime)}
                     </span>
                   </div>
                   <div className="activity-value">
@@ -571,7 +608,13 @@ function App() {
                     <strong>{transaction.type}</strong>
                     <span>{formatDateTime(transaction.transactionDateTime)}</span>
                   </div>
-                  <div className="activity-value">{formatCurrency(transaction.amount)}</div>
+                  <div
+                    className={`activity-value ${
+                      transaction.type === 'DEPOSIT' ? 'cash-deposit' : ''
+                    }`}
+                  >
+                    {formatCashTransactionAmount(transaction)}
+                  </div>
                 </div>
               ))}
             </ActivityPanel>
@@ -592,11 +635,11 @@ function fetchJson(url) {
   })
 }
 
-function SummaryItem({ label, value }) {
+function SummaryItem({ label, value, valueClassName = '' }) {
   return (
     <div className="summary-item">
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong className={valueClassName}>{value}</strong>
     </div>
   )
 }
