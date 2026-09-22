@@ -3,6 +3,7 @@ import './App.css'
 
 const DASHBOARD_API_URL = 'http://localhost:8080/api/account/1/dashboard'
 const CASH_TRANSACTION_API_URL = 'http://localhost:8080/api/cash-transactions'
+const CASH_TRANSACTION_LIST_API_URL = 'http://localhost:8080/api/accounts/1/cash-transactions'
 const TRADE_API_URL = 'http://localhost:8080/api/trades'
 const ACCOUNT_ID = 1
 
@@ -12,6 +13,10 @@ function formatCurrency(value) {
 
 function formatRate(value) {
   return `${Number(value).toFixed(2)}%`
+}
+
+function formatDateTime(value) {
+  return value ? value.replace('T', ' ').slice(0, 16) : '-'
 }
 
 function formatLocalDateTime(date) {
@@ -27,10 +32,14 @@ function formatLocalDateTime(date) {
 
 function App() {
   const [dashboard, setDashboard] = useState(null)
+  const [trades, setTrades] = useState([])
+  const [cashTransactions, setCashTransactions] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCashModalOpen, setIsCashModalOpen] = useState(false)
   const [isTradeModalOpen, setIsTradeModalOpen] = useState(false)
+  const [isTradeHistoryModalOpen, setIsTradeHistoryModalOpen] = useState(false)
+  const [isCashHistoryModalOpen, setIsCashHistoryModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [formMessage, setFormMessage] = useState('')
   const [tradeMessage, setTradeMessage] = useState('')
@@ -48,19 +57,27 @@ function App() {
     memo: '',
   })
 
-  const loadDashboard = () => {
+  const loadPageData = () => {
     setIsLoading(true)
 
-    return fetch(DASHBOARD_API_URL)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Failed to load account dashboard.')
-        }
-
-        return response.json()
-      })
-      .then((data) => {
-        setDashboard(data)
+    return Promise.all([
+      fetchJson(DASHBOARD_API_URL),
+      fetchJson(TRADE_API_URL),
+      fetchJson(CASH_TRANSACTION_LIST_API_URL),
+    ])
+      .then(([dashboardData, tradeData, cashTransactionData]) => {
+        setDashboard(dashboardData)
+        setTrades(
+          tradeData
+            .filter((trade) => trade.accountId === ACCOUNT_ID)
+            .sort((a, b) => b.tradeDateTime.localeCompare(a.tradeDateTime))
+            .slice(0, 5),
+        )
+        setCashTransactions(
+          cashTransactionData
+            .sort((a, b) => b.transactionDateTime.localeCompare(a.transactionDateTime))
+            .slice(0, 5),
+        )
         setErrorMessage('')
       })
       .catch((error) => {
@@ -72,7 +89,7 @@ function App() {
   }
 
   useEffect(() => {
-    loadDashboard()
+    loadPageData()
   }, [])
 
   const handleCashFormChange = (event) => {
@@ -125,7 +142,7 @@ function App() {
         })
         setFormMessage('')
         setIsCashModalOpen(false)
-        return loadDashboard()
+        return loadPageData()
       })
       .catch((error) => {
         setFormMessage(error.message)
@@ -175,7 +192,7 @@ function App() {
         })
         setTradeMessage('')
         setIsTradeModalOpen(false)
-        return loadDashboard()
+        return loadPageData()
       })
       .catch((error) => {
         setTradeMessage(error.message)
@@ -285,6 +302,23 @@ function App() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="history-actions" aria-label="Account history actions">
+          <button
+            type="button"
+            className="history-button"
+            onClick={() => setIsTradeHistoryModalOpen(true)}
+          >
+            Trade History
+          </button>
+          <button
+            type="button"
+            className="history-button"
+            onClick={() => setIsCashHistoryModalOpen(true)}
+          >
+            Cash History
+          </button>
         </div>
       </section>
 
@@ -464,8 +498,98 @@ function App() {
           </section>
         </div>
       )}
+
+      {isTradeHistoryModalOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <section
+            className="modal history-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="trade-history-modal-title"
+          >
+            <div className="modal-header">
+              <div>
+                <h2 id="trade-history-modal-title">Trade History</h2>
+                <p>Recent buy and sell records for this account.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={() => setIsTradeHistoryModalOpen(false)}
+                aria-label="Close trade history modal"
+              >
+                X
+              </button>
+            </div>
+
+            <ActivityPanel title="Recent Trades" emptyMessage="No trades yet.">
+              {trades.map((trade) => (
+                <div className="activity-row" key={trade.id}>
+                  <div>
+                    <strong>{trade.stockName}</strong>
+                    <span>
+                      {trade.tradeType} · {trade.stockSymbol} · {formatDateTime(trade.tradeDateTime)}
+                    </span>
+                  </div>
+                  <div className="activity-value">
+                    {formatCurrency(trade.tradePrice)} × {trade.quantity}
+                  </div>
+                </div>
+              ))}
+            </ActivityPanel>
+          </section>
+        </div>
+      )}
+
+      {isCashHistoryModalOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <section
+            className="modal history-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cash-history-modal-title"
+          >
+            <div className="modal-header">
+              <div>
+                <h2 id="cash-history-modal-title">Cash History</h2>
+                <p>Recent deposit and withdrawal records for this account.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-button"
+                onClick={() => setIsCashHistoryModalOpen(false)}
+                aria-label="Close cash history modal"
+              >
+                X
+              </button>
+            </div>
+
+            <ActivityPanel title="Cash Transactions" emptyMessage="No cash transactions yet.">
+              {cashTransactions.map((transaction) => (
+                <div className="activity-row" key={transaction.id}>
+                  <div>
+                    <strong>{transaction.type}</strong>
+                    <span>{formatDateTime(transaction.transactionDateTime)}</span>
+                  </div>
+                  <div className="activity-value">{formatCurrency(transaction.amount)}</div>
+                </div>
+              ))}
+            </ActivityPanel>
+          </section>
+        </div>
+      )}
     </main>
   )
+}
+
+function fetchJson(url) {
+  return fetch(url).then((response) => {
+    if (!response.ok) {
+      throw new Error('Failed to load dashboard data.')
+    }
+
+    return response.json()
+  })
 }
 
 function SummaryItem({ label, value }) {
@@ -474,6 +598,19 @@ function SummaryItem({ label, value }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
+  )
+}
+
+function ActivityPanel({ title, emptyMessage, children }) {
+  const hasItems = Array.isArray(children) ? children.length > 0 : Boolean(children)
+
+  return (
+    <section className="activity-panel">
+      <div className="section-heading">
+        <h2>{title}</h2>
+      </div>
+      {hasItems ? children : <p className="empty-list">{emptyMessage}</p>}
+    </section>
   )
 }
 

@@ -52,6 +52,7 @@
 }
 
 .cash-action-button,
+.history-button,
 .primary-button,
 .secondary-button,
 .modal-close-button {
@@ -66,6 +67,20 @@
   padding: 0 16px;
   color: #fff;
   background: #1f6f62;
+}
+
+.history-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.history-button {
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--text-h);
+  background: var(--table-head);
 }
 
 .summary-grid {
@@ -158,6 +173,10 @@
   background: var(--panel);
   padding: 22px;
   box-shadow: 0 24px 60px rgba(17, 24, 39, 0.24);
+}
+
+.history-modal {
+  width: min(640px, 100%);
 }
 
 .modal-header {
@@ -255,6 +274,53 @@ tbody tr:last-child td {
   border-bottom: none;
 }
 
+.activity-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--panel);
+}
+
+.activity-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.activity-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.activity-row strong {
+  display: block;
+  color: var(--text-h);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.activity-row span,
+.empty-list {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.activity-value {
+  color: var(--text-h);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.empty-list {
+  margin: 0;
+  text-align: left;
+}
+
 .empty-state {
   margin: 120px auto 0;
   max-width: 520px;
@@ -287,6 +353,10 @@ tbody tr:last-child td {
 
   .summary-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .history-actions {
+    justify-content: flex-start;
   }
 
 }
