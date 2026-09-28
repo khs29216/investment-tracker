@@ -12,7 +12,7 @@ public class InvestmentPlan {
     private String stockName;   // 주식 이름
     private String stockSymbol; // 주식 코드
 
-    private Integer totalBudget;    // 총 예산
+    private Long totalBudget;    // 총 예산
 
     private String reason;  // 계획 이유
 
@@ -21,7 +21,7 @@ public class InvestmentPlan {
     protected InvestmentPlan() {
     }
 
-    public InvestmentPlan(String stockName, String stockSymbol, Integer totalBudget, String reason) {
+    public InvestmentPlan(String stockName, String stockSymbol, Long totalBudget, String reason) {
         this.stockName = stockName;
         this.stockSymbol = stockSymbol;
         this.totalBudget = totalBudget;
@@ -31,7 +31,7 @@ public class InvestmentPlan {
     public void update(
             String stockName,
             String stockSymbol,
-            Integer totalBudget,
+            Long totalBudget,
             String reason
     ) {
         this.stockName = stockName;
@@ -52,7 +52,7 @@ public class InvestmentPlan {
         return stockSymbol;
     }
 
-    public Integer getTotalBudget() {
+    public Long getTotalBudget() {
         return totalBudget;
     }
 

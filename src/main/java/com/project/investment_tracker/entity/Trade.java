@@ -20,7 +20,7 @@ public class Trade {
     @Enumerated(EnumType.STRING)
     private TradeType tradeType;
 
-    private Integer tradePrice;
+    private Long tradePrice;
     private Integer quantity;
 
     private LocalDateTime tradeDateTime;
@@ -39,7 +39,7 @@ public class Trade {
             String stockName,
             String stockSymbol,
             TradeType tradeType,
-            Integer tradePrice,
+            Long tradePrice,
             Integer quantity,
             LocalDateTime tradeDateTime,
             String memo,
@@ -60,7 +60,7 @@ public class Trade {
             String stockName,
             String stockSymbol,
             TradeType tradeType,
-            Integer tradePrice,
+            Long tradePrice,
             Integer quantity,
             LocalDateTime tradeDateTime,
             String memo,
@@ -96,7 +96,7 @@ public class Trade {
         return tradeType;
     }
 
-    public Integer getTradePrice() {
+    public Long getTradePrice() {
         return tradePrice;
     }
 

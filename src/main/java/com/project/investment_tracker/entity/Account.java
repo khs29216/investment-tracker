@@ -16,22 +16,22 @@ public class Account {
 
     private String accountName;
 
-    private Integer cashBalance;
+    private Long cashBalance;
 
     protected Account() {
     }
 
-    public Account(String accountName, Integer cashBalance) {
+    public Account(String accountName, Long cashBalance) {
         this.accountName = accountName;
         this.cashBalance = cashBalance;
     }
 
-    public void update(String accountName, Integer cashBalance) {
+    public void update(String accountName, Long cashBalance) {
         this.accountName = accountName;
         this.cashBalance = cashBalance;
     }
 
-    public void decreaseCash(Integer amount) {
+    public void decreaseCash(Long amount) {
         if (cashBalance < amount) {
             throw new BadRequestException(ErrorMessage.INSUFFICIENT_CASH_BALANCE);
         }
@@ -39,7 +39,7 @@ public class Account {
         this.cashBalance -= amount;
     }
 
-    public void increaseCash(Integer amount) {
+    public void increaseCash(Long amount) {
         this.cashBalance += amount;
     }
 
@@ -51,7 +51,7 @@ public class Account {
         return accountName;
     }
 
-    public Integer getCashBalance() {
+    public Long getCashBalance() {
         return cashBalance;
     }
 }

@@ -68,7 +68,7 @@ public class CashTransactionService {
         }
     }
 
-    private void applyCashTransaction(Account account, CashTransactionType type, Integer amount) {
+    private void applyCashTransaction(Account account, CashTransactionType type, Long amount) {
         if (type == CashTransactionType.DEPOSIT) {
             account.increaseCash(amount);
         }

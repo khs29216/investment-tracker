@@ -27,7 +27,7 @@ public class KisStockPriceClient {
                 .build();
     }
 
-    public Integer getCurrentPrice(String stockSymbol) {
+    public Long getCurrentPrice(String stockSymbol) {
         KisStockPriceApiResponse response = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/uapi/domestic-stock/v1/quotations/inquire-price")
@@ -44,7 +44,7 @@ public class KisStockPriceClient {
 
         Objects.requireNonNull(response);
 
-        return response.output().currentPriceAsInteger();
+        return response.output().currentPriceAsLong();
     }
 
     private record KisStockPriceApiResponse(
@@ -56,8 +56,8 @@ public class KisStockPriceClient {
             @JsonProperty("stck_prpr")
             String currentPrice
     ) {
-        private Integer currentPriceAsInteger() {
-            return Integer.valueOf(currentPrice.replace(",", ""));
+        private Long currentPriceAsLong() {
+            return Long.valueOf(currentPrice.replace(",", ""));
         }
     }
 }

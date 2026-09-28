@@ -40,15 +40,15 @@ public class AccountDashboardService {
                 .map(this::toStockHoldingDashboardResponse)
                 .toList();
 
-        int totalInvestmentAmount = stockHoldings.stream()
-                .mapToInt(StockHoldingDashboardResponse::investmentAmount)
+        long totalInvestmentAmount = stockHoldings.stream()
+                .mapToLong(StockHoldingDashboardResponse::investmentAmount)
                 .sum();
 
-        int totalEvaluationAmount = stockHoldings.stream()
-                .mapToInt(StockHoldingDashboardResponse::evaluationAmount)
+        long totalEvaluationAmount = stockHoldings.stream()
+                .mapToLong(StockHoldingDashboardResponse::evaluationAmount)
                 .sum();
 
-        int totalProfitLoss = totalEvaluationAmount - totalInvestmentAmount;
+        long totalProfitLoss = totalEvaluationAmount - totalInvestmentAmount;
 
         return new AccountDashboardResponse(
                 account.getId(),
@@ -63,10 +63,10 @@ public class AccountDashboardService {
     }
 
     private StockHoldingDashboardResponse toStockHoldingDashboardResponse(StockHolding stockHolding) {
-        int currentPrice = stockPriceService.getStockPrice(stockHolding.getStockSymbol()).currentPrice();
-        int investmentAmount = stockHolding.getTotalInvestmentAmount();
-        int evaluationAmount = currentPrice * stockHolding.getQuantity();
-        int profitLoss = evaluationAmount - investmentAmount;
+        long currentPrice = stockPriceService.getStockPrice(stockHolding.getStockSymbol()).currentPrice();
+        long investmentAmount = stockHolding.getTotalInvestmentAmount();
+        long evaluationAmount = currentPrice * stockHolding.getQuantity();
+        long profitLoss = evaluationAmount - investmentAmount;
 
         return new StockHoldingDashboardResponse(
                 stockHolding.getStockName(),
@@ -81,13 +81,14 @@ public class AccountDashboardService {
         );
     }
 
-    private BigDecimal calculateReturnRate(int profitLoss, int investmentAmount) {
+    private BigDecimal calculateReturnRate(long profitLoss, long investmentAmount) {
         if (investmentAmount == 0) {
-            return BigDecimal.ZERO;
+            return BigDecimal.ZERO.setScale(1);
         }
 
+        // 수익률은 백분율로 계산하고 소수 첫째 자리까지 반올림한다.
         return BigDecimal.valueOf(profitLoss)
                 .multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(investmentAmount), 2, RoundingMode.HALF_UP);
+                .divide(BigDecimal.valueOf(investmentAmount), 1, RoundingMode.HALF_UP);
     }
 }

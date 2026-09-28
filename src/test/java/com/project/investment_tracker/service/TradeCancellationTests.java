@@ -37,7 +37,7 @@ class TradeCancellationTests {
         trades.deleteAll();
         holdings.deleteAll();
         accounts.deleteAll();
-        accountId = accounts.save(new Account("Test", 10000)).getId();
+        accountId = accounts.save(new Account("Test", 10000L)).getId();
     }
 
     @Test
@@ -105,17 +105,39 @@ class TradeCancellationTests {
         assertPosition(5, 100, 500, 10000);
     }
 
-    private Long create(TradeType type, int price, int quantity, int day) {
+    @Test
+    @DisplayName("int 범위를 넘는 거래대금을 저장하고 매수 취소 시 복원한다")
+    void largeTradeAmountSurvivesPersistenceAndCancellation() {
+        Account account = accounts.findById(accountId).orElseThrow();
+        account.update("Test", 5_000_000_000L);
+        accounts.save(account);
+        Long buy = create(TradeType.BUY, 1_000_000L, 3000, 0);
+        assertPosition(3000, 1_000_000L, 3_000_000_000L, 2_000_000_000L);
+        service.deleteTrade(buy);
+        assertPosition(0, 0L, 0L, 5_000_000_000L);
+    }
+
+    @Test
+    @DisplayName("평균단가는 원 단위로 절삭하고 실제 투자원금은 유지한다")
+    void averagePriceTruncatesWithoutTruncatingCost() {
+        create(TradeType.BUY, 100L, 1, 0);
+        create(TradeType.BUY, 101L, 2, 1);
+        assertPosition(3, 100L, 302L, 9698L);
+        create(TradeType.SELL, 110L, 1, 2);
+        assertPosition(2, 100L, 202L, 9808L);
+    }
+
+    private Long create(TradeType type, long price, int quantity, int day) {
         return service.createTrade(new TradeCreateRequest(accountId, "Test", "TEST", type,
                 price, quantity, start.plusDays(day), null, null)).id();
     }
 
-    private TradeUpdateRequest update(String symbol, TradeType type, int price, int quantity, int day) {
+    private TradeUpdateRequest update(String symbol, TradeType type, long price, int quantity, int day) {
         return new TradeUpdateRequest("Test", symbol, type, price, quantity,
                 start.plusDays(day), null, null);
     }
 
-    private void assertPosition(int quantity, int average, int cost, int cash) {
+    private void assertPosition(int quantity, long average, long cost, long cash) {
         StockHolding holding = holdings.findByAccountIdAndStockSymbol(accountId, "TEST").orElseThrow();
         assertEquals(quantity, holding.getQuantity());
         assertEquals(average, holding.getAveragePrice());

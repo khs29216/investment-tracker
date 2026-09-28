@@ -7,8 +7,8 @@ public record StockHoldingResponse(
         String stockName,
         String stockSymbol,
         Integer quantity,
-        Integer averagePrice,
-        Integer totalInvestmentAmount
+        Long averagePrice,
+        Long totalInvestmentAmount
 ) {
     public static StockHoldingResponse from(StockHolding stockHolding) {
         return new StockHoldingResponse(

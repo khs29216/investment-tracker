@@ -6,11 +6,11 @@ public record StockHoldingDashboardResponse(
         String stockName,
         String stockSymbol,
         Integer quantity,
-        Integer averagePrice,
-        Integer currentPrice,
-        Integer investmentAmount,
-        Integer evaluationAmount,
-        Integer profitLoss,
+        Long averagePrice,
+        Long currentPrice,
+        Long investmentAmount,
+        Long evaluationAmount,
+        Long profitLoss,
         BigDecimal returnRate
 ) {
 }

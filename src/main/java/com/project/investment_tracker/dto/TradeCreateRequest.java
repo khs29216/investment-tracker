@@ -17,7 +17,7 @@ public record TradeCreateRequest(
         TradeType tradeType,
         @NotNull(message = "거래 가격은 필수입니다.")
         @Positive(message = "거래 가격은 양수여야 합니다.")
-        Integer tradePrice,
+        Long tradePrice,
         @NotNull(message = "거래 수량은 필수입니다.")
         @Positive(message = "거래 수량은 양수여야 합니다.")
         Integer quantity,

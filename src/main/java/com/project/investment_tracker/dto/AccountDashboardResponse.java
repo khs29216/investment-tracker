@@ -6,10 +6,10 @@ import java.util.List;
 public record AccountDashboardResponse(
         Long accountId,
         String accountName,
-        Integer cashBalance,
-        Integer totalInvestmentAmount,
-        Integer totalEvaluationAmount,
-        Integer totalProfitLoss,
+        Long cashBalance,
+        Long totalInvestmentAmount,
+        Long totalEvaluationAmount,
+        Long totalProfitLoss,
         BigDecimal totalReturnRate,
         List<StockHoldingDashboardResponse> stockHoldings
 ) {

@@ -8,7 +8,7 @@ public record PlanActionResponse(
         Long id,
         Long investmentPlanId,
         ActionType actionType,
-        Integer triggerPrice,
+        Long triggerPrice,
         Integer quantity,
         String memo,
         ActionStatus actionStatus

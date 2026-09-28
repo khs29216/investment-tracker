@@ -11,7 +11,7 @@ public record InvestmentPlanCreateRequest(
         String stockSymbol,
         @NotNull(message = "총 예산은 필수입니다.")
         @Positive(message = "총 예산은 양수여야 합니다.")
-        Integer totalBudget,
+        Long totalBudget,
         @NotBlank(message = "계획 이유는 필수입니다.")
         String reason
 ) {

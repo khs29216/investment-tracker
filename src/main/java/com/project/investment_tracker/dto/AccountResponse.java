@@ -5,7 +5,7 @@ import com.project.investment_tracker.entity.Account;
 public record AccountResponse(
         Long id,
         String accountName,
-        Integer cashBalance
+        Long cashBalance
 ) {
     public static AccountResponse from(Account account) {
         return new AccountResponse(

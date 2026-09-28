@@ -16,7 +16,7 @@ public class PlanAction {
     @Enumerated(EnumType.STRING)
     private ActionType actionType;
 
-    private Integer triggerPrice;
+    private Long triggerPrice;
     private Integer quantity;
 
     private String memo;
@@ -30,7 +30,7 @@ public class PlanAction {
     public PlanAction(
             InvestmentPlan investmentPlan,
             ActionType actionType,
-            Integer triggerPrice,
+            Long triggerPrice,
             Integer quantity,
             String memo
     ) {
@@ -44,7 +44,7 @@ public class PlanAction {
 
     public void update(
             ActionType actionType,
-            Integer triggerPrice,
+            Long triggerPrice,
             Integer quantity,
             String memo
     ) {
@@ -70,7 +70,7 @@ public class PlanAction {
         return actionType;
     }
 
-    public Integer getTriggerPrice() {
+    public Long getTriggerPrice() {
         return triggerPrice;
     }
 

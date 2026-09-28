@@ -36,7 +36,7 @@ public class StockPriceService {
 
         waitForRateLimit();
 
-        Integer currentPrice = kisStockPriceClient.getCurrentPrice(stockSymbol);
+        Long currentPrice = kisStockPriceClient.getCurrentPrice(stockSymbol);
         lastApiCalledAt = LocalDateTime.now();
 
         stockPriceCache.put(
@@ -73,7 +73,7 @@ public class StockPriceService {
     }
 
     private record CachedStockPrice(
-            Integer currentPrice,
+            Long currentPrice,
             LocalDateTime expiresAt
     ) {
         private boolean isExpired() {

@@ -18,7 +18,7 @@ public class CashTransaction {
     @Enumerated(EnumType.STRING)
     private CashTransactionType type;
 
-    private Integer amount;
+    private Long amount;
 
     private LocalDateTime transactionDateTime;
 
@@ -30,7 +30,7 @@ public class CashTransaction {
     public CashTransaction(
             Account account,
             CashTransactionType type,
-            Integer amount,
+            Long amount,
             LocalDateTime transactionDateTime,
             String memo
     ) {
@@ -53,7 +53,7 @@ public class CashTransaction {
         return type;
     }
 
-    public Integer getAmount() {
+    public Long getAmount() {
         return amount;
     }
 

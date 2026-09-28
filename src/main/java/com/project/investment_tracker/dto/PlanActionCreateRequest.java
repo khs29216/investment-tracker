@@ -9,7 +9,7 @@ public record PlanActionCreateRequest(
         ActionType actionType,
         @NotNull(message = "기준 가격은 필수입니다.")
         @Positive(message = "기준 가격은 양수여야 합니다.")
-        Integer triggerPrice,
+        Long triggerPrice,
         @NotNull(message = "수량은 필수입니다.")
         @Positive(message = "수량은 양수여야 합니다.")
         Integer quantity,

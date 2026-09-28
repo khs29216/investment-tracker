@@ -68,8 +68,8 @@ public class AccountService {
 
         List<StockHolding> stockHoldings = getStockHoldings(account);
 
-        int totalInvestmentAmount = stockHoldings.stream()
-                .mapToInt(StockHolding::getTotalInvestmentAmount)
+        long totalInvestmentAmount = stockHoldings.stream()
+                .mapToLong(StockHolding::getTotalInvestmentAmount)
                 .sum();
 
         List<StockHoldingResponse> stockHoldingResponses = stockHoldings.stream()

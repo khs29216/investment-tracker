@@ -21,9 +21,9 @@ public class StockHolding {
 
     private Integer quantity;
 
-    private Integer averagePrice;
+    private Long averagePrice;
 
-    private Integer totalInvestmentAmount;
+    private Long totalInvestmentAmount;
 
     protected StockHolding() {
     }
@@ -33,7 +33,7 @@ public class StockHolding {
             String stockName,
             String stockSymbol,
             Integer quantity,
-            Integer averagePrice
+            Long averagePrice
     ) {
         this.account = account;
         this.stockName = stockName;
@@ -43,13 +43,14 @@ public class StockHolding {
         this.totalInvestmentAmount = averagePrice * quantity;
     }
 
-    public void buy(Integer price, Integer quantity) {
-        int additionalAmount = price * quantity;
-        int updatedTotalInvestmentAmount = this.totalInvestmentAmount + additionalAmount;
+    public void buy(Long price, Integer quantity) {
+        long additionalAmount = price * quantity;
+        long updatedTotalInvestmentAmount = this.totalInvestmentAmount + additionalAmount;
         int updatedQuantity = this.quantity + quantity;
 
         this.quantity = updatedQuantity;
         this.totalInvestmentAmount = updatedTotalInvestmentAmount;
+        // 평균단가는 원 단위로 절삭하고, 투자원금은 실제 매수 금액을 유지한다.
         this.averagePrice = updatedTotalInvestmentAmount / updatedQuantity;
     }
 
@@ -58,14 +59,14 @@ public class StockHolding {
             throw new BadRequestException(ErrorMessage.INSUFFICIENT_STOCK_QUANTITY);
         }
 
-        int soldInvestmentAmount = this.averagePrice * quantity;
+        long soldInvestmentAmount = this.averagePrice * quantity;
 
         this.quantity -= quantity;
         this.totalInvestmentAmount -= soldInvestmentAmount;
 
         if (this.quantity == 0) {
-            this.averagePrice = 0;
-            this.totalInvestmentAmount = 0;
+            this.averagePrice = 0L;
+            this.totalInvestmentAmount = 0L;
         }
     }
 
@@ -75,8 +76,8 @@ public class StockHolding {
 
     public void resetPosition() {
         this.quantity = 0;
-        this.averagePrice = 0;
-        this.totalInvestmentAmount = 0;
+        this.averagePrice = 0L;
+        this.totalInvestmentAmount = 0L;
     }
 
     public Account getAccount() {
@@ -95,11 +96,11 @@ public class StockHolding {
         return quantity;
     }
 
-    public Integer getAveragePrice() {
+    public Long getAveragePrice() {
         return averagePrice;
     }
 
-    public Integer getTotalInvestmentAmount() {
+    public Long getTotalInvestmentAmount() {
         return totalInvestmentAmount;
     }
 

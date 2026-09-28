@@ -7,7 +7,7 @@ public record InvestmentPlanResponse (
         Long id,
         String stockName,
         String stockSymbol,
-        Integer totalBudget,
+        Long totalBudget,
         String reason,
         PlanStatus planStatus
 ) {

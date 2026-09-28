@@ -19,7 +19,7 @@ function formatCashTransactionAmount(transaction) {
 }
 
 function formatRate(value) {
-  return `${Number(value).toFixed(2)}%`
+  return `${Number(value).toFixed(1)}%`
 }
 
 function formatDateTime(value) {

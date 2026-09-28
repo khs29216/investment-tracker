@@ -156,7 +156,7 @@ public class TradeService {
     }
 
     private void applyCashEffect(Account account, TradeCommand command) {
-        int amount = calculateTradeAmount(command);
+        long amount = calculateTradeAmount(command);
         if (command.tradeType() == TradeType.BUY) {
             account.decreaseCash(amount);
         } else {
@@ -170,7 +170,7 @@ public class TradeService {
                 account.getId(), stockSymbol);
         StockHolding stockHolding = stockHoldingRepository
                 .findByAccountIdAndStockSymbol(account.getId(), stockSymbol)
-                .orElseGet(() -> new StockHolding(account, stockName, stockSymbol, 0, 0));
+                .orElseGet(() -> new StockHolding(account, stockName, stockSymbol, 0, 0L));
         stockHolding.resetPosition();
         for (Trade remainingTrade : trades) {
             if (remainingTrade.getTradeType() == TradeType.BUY) {
@@ -196,7 +196,7 @@ public class TradeService {
         );
     }
 
-    private int calculateTradeAmount(TradeCommand command) {
+    private long calculateTradeAmount(TradeCommand command) {
         return command.tradePrice() * command.quantity();
     }
 
@@ -204,7 +204,7 @@ public class TradeService {
             String stockName,
             String stockSymbol,
             TradeType tradeType,
-            Integer tradePrice,
+            Long tradePrice,
             Integer quantity
     ) {
         private static TradeCommand from(TradeCreateRequest request) {

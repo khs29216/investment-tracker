@@ -9,7 +9,7 @@ public record CashTransactionResponse(
         Long id,
         Long accountId,
         CashTransactionType type,
-        Integer amount,
+        Long amount,
         LocalDateTime transactionDateTime,
         String memo
 ) {

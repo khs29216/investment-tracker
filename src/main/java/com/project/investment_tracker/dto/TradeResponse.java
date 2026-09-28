@@ -10,7 +10,7 @@ public record TradeResponse(
         String stockName,
         String stockSymbol,
         TradeType tradeType,
-        Integer tradePrice,
+        Long tradePrice,
         Integer quantity,
         LocalDateTime tradeDateTime,
         String memo,

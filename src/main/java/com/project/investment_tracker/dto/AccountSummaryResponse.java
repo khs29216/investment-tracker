@@ -5,8 +5,8 @@ import java.util.List;
 public record AccountSummaryResponse(
         Long accountId,
         String accountName,
-        Integer cashBalance,
-        Integer totalInvestmentAmount,
+        Long cashBalance,
+        Long totalInvestmentAmount,
         List<StockHoldingResponse> stockHoldings
 ) {
 }
