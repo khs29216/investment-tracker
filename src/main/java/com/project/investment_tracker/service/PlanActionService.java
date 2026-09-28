@@ -10,6 +10,7 @@ import com.project.investment_tracker.global.error.InvalidRelationException;
 import com.project.investment_tracker.global.error.ResourceNotFoundException;
 import com.project.investment_tracker.repository.InvestmentPlanRepository;
 import com.project.investment_tracker.repository.PlanActionRepository;
+import com.project.investment_tracker.repository.TradeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +21,13 @@ public class PlanActionService {
 
     private final PlanActionRepository planActionRepository;
     private final InvestmentPlanRepository investmentPlanRepository;
+    private final TradeRepository tradeRepository;
 
-    public PlanActionService(PlanActionRepository planActionRepository, InvestmentPlanRepository investmentPlanRepository) {
+    public PlanActionService(PlanActionRepository planActionRepository, InvestmentPlanRepository investmentPlanRepository,
+                             TradeRepository tradeRepository) {
         this.planActionRepository = planActionRepository;
         this.investmentPlanRepository = investmentPlanRepository;
+        this.tradeRepository = tradeRepository;
     }
 
     private PlanAction findActionInPlan(Long planId, Long actionId) {
@@ -79,6 +83,7 @@ public class PlanActionService {
                 request.quantity(),
                 request.memo()
         );
+        planAction.updateExecutionStatus(tradeRepository.sumQuantityByPlanActionId(planAction.getId()));
 
         return PlanActionResponse.from(planAction);
     }

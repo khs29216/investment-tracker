@@ -54,8 +54,14 @@ public class PlanAction {
         this.memo = memo;
     }
 
-    public void execute() {
-        this.actionStatus = ActionStatus.EXECUTED;
+    public void updateExecutionStatus(long executedQuantity) {
+        if (executedQuantity == 0) {
+            this.actionStatus = ActionStatus.PENDING;
+        } else if (executedQuantity < this.quantity) {
+            this.actionStatus = ActionStatus.IN_PROGRESS;
+        } else {
+            this.actionStatus = ActionStatus.EXECUTED;
+        }
     }
 
     public Long getId() {

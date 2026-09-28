@@ -77,9 +77,7 @@ public class TradeService {
         Trade savedTrade = tradeRepository.save(trade);
         rebuildStockHolding(account, trade.getStockSymbol(), trade.getStockName());
 
-        if (planAction != null) {
-            planAction.execute();
-        }
+        refreshPlanActionStatus(planAction);
 
         return TradeResponse.from(savedTrade);
     }
@@ -105,6 +103,7 @@ public class TradeService {
 
         validateNoLaterTrade(trade);
 
+        PlanAction previousPlanAction = trade.getPlanAction();
         PlanAction planAction = findPlanActionOrNull(request.planActionId());
         validatePlanAction(planAction, trade.getStockSymbol(), request.tradeType());
 
@@ -122,6 +121,11 @@ public class TradeService {
 
         rebuildStockHolding(trade.getAccount(), trade.getStockSymbol(), trade.getStockName());
 
+        refreshPlanActionStatus(previousPlanAction);
+        if (planAction != previousPlanAction) {
+            refreshPlanActionStatus(planAction);
+        }
+
         return TradeResponse.from(trade);
     }
 
@@ -131,10 +135,20 @@ public class TradeService {
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.TRADE_NOT_FOUND));
 
         validateNoLaterTrade(trade);
+        PlanAction planAction = trade.getPlanAction();
         applyCashEffect(trade.getAccount(), reverse(TradeCommand.from(trade)));
 
         tradeRepository.delete(trade);
         rebuildStockHolding(trade.getAccount(), trade.getStockSymbol(), trade.getStockName());
+        refreshPlanActionStatus(planAction);
+    }
+
+    private void refreshPlanActionStatus(PlanAction planAction) {
+        if (planAction == null) {
+            return;
+        }
+        // JPA의 AUTO flush로 변경된 거래를 반영한 뒤 연결 수량을 합산한다.
+        planAction.updateExecutionStatus(tradeRepository.sumQuantityByPlanActionId(planAction.getId()));
     }
 
     private void validatePlanAction(PlanAction planAction, String stockSymbol, TradeType tradeType) {
