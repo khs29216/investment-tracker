@@ -10,6 +10,7 @@ import com.project.investment_tracker.entity.Trade;
 import com.project.investment_tracker.entity.TradeType;
 import com.project.investment_tracker.global.error.BadRequestException;
 import com.project.investment_tracker.global.error.ErrorMessage;
+import com.project.investment_tracker.global.error.InvalidRelationException;
 import com.project.investment_tracker.global.error.ResourceNotFoundException;
 import com.project.investment_tracker.repository.AccountRepository;
 import com.project.investment_tracker.repository.PlanActionRepository;
@@ -57,6 +58,7 @@ public class TradeService {
     public TradeResponse createTrade(TradeCreateRequest request) {
         Account account = findAccount(request.accountId());
         PlanAction planAction = findPlanActionOrNull(request.planActionId());
+        validatePlanAction(planAction, request.stockSymbol(), request.tradeType());
 
         applyCashEffect(account, TradeCommand.from(request));
 
@@ -103,10 +105,11 @@ public class TradeService {
 
         validateNoLaterTrade(trade);
 
+        PlanAction planAction = findPlanActionOrNull(request.planActionId());
+        validatePlanAction(planAction, trade.getStockSymbol(), request.tradeType());
+
         applyCashEffect(trade.getAccount(), reverse(TradeCommand.from(trade)));
         applyCashEffect(trade.getAccount(), TradeCommand.from(request));
-
-        PlanAction planAction = findPlanActionOrNull(request.planActionId());
 
         trade.update(
                 request.tradeType(),
@@ -132,6 +135,22 @@ public class TradeService {
 
         tradeRepository.delete(trade);
         rebuildStockHolding(trade.getAccount(), trade.getStockSymbol(), trade.getStockName());
+    }
+
+    private void validatePlanAction(PlanAction planAction, String stockSymbol, TradeType tradeType) {
+        if (planAction == null) {
+            return;
+        }
+        if (!planAction.getInvestmentPlan().getStockSymbol().equals(stockSymbol)) {
+            throw new InvalidRelationException(ErrorMessage.TRADE_PLAN_ACTION_STOCK_MISMATCH);
+        }
+        TradeType expectedType = switch (planAction.getActionType()) {
+            case BUY -> TradeType.BUY;
+            case SELL -> TradeType.SELL;
+        };
+        if (expectedType != tradeType) {
+            throw new InvalidRelationException(ErrorMessage.TRADE_PLAN_ACTION_TYPE_MISMATCH);
+        }
     }
 
     private void validateNoLaterTrade(Trade trade) {

@@ -12,6 +12,8 @@ public final class ErrorMessage {
     public static final String INSUFFICIENT_CASH_BALANCE = "현금 잔고가 부족합니다.";
     public static final String INSUFFICIENT_STOCK_QUANTITY = "보유 수량이 부족합니다.";
     public static final String TRADE_HAS_LATER_TRADE = "이후 거래가 있어 수정하거나 삭제할 수 없습니다.";
+    public static final String TRADE_PLAN_ACTION_STOCK_MISMATCH = "계획 액션과 거래의 종목이 일치하지 않습니다.";
+    public static final String TRADE_PLAN_ACTION_TYPE_MISMATCH = "계획 액션과 거래의 매매 방향이 일치하지 않습니다.";
 
     private ErrorMessage() {
     }

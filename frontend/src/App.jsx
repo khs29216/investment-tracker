@@ -41,7 +41,7 @@ function getNumberToneClassName(value) {
 }
 
 function getTradeTypeFromPlanAction(actionType) {
-  if (actionType === 'SELL' || actionType === 'STOP_LOSS') {
+  if (actionType === 'SELL') {
     return 'SELL'
   }
 
@@ -1086,7 +1086,6 @@ function App() {
                 >
                   <option value="BUY">Buy</option>
                   <option value="SELL">Sell</option>
-                  <option value="STOP_LOSS">Stop Loss</option>
                 </select>
               </label>
 
