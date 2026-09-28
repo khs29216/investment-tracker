@@ -58,7 +58,7 @@ public class TradeService {
         Account account = findAccount(request.accountId());
         PlanAction planAction = findPlanActionOrNull(request.planActionId());
 
-        applyTradeToAccount(account, TradeCommand.from(request));
+        applyCashEffect(account, TradeCommand.from(request));
 
         Trade trade = new Trade(
                 account,
@@ -73,6 +73,7 @@ public class TradeService {
         );
 
         Trade savedTrade = tradeRepository.save(trade);
+        rebuildStockHolding(account, trade.getStockSymbol(), trade.getStockName());
 
         if (planAction != null) {
             planAction.execute();
@@ -102,8 +103,10 @@ public class TradeService {
 
         validateNoLaterTrade(trade);
 
-        rollbackTradeFromAccount(trade);
-        applyTradeToAccount(trade.getAccount(), TradeCommand.from(request));
+        String previousStockSymbol = trade.getStockSymbol();
+        String previousStockName = trade.getStockName();
+        applyCashEffect(trade.getAccount(), reverse(TradeCommand.from(trade)));
+        applyCashEffect(trade.getAccount(), TradeCommand.from(request));
 
         PlanAction planAction = findPlanActionOrNull(request.planActionId());
 
@@ -118,6 +121,11 @@ public class TradeService {
                 planAction
         );
 
+        rebuildStockHolding(trade.getAccount(), previousStockSymbol, previousStockName);
+        if (!previousStockSymbol.equals(trade.getStockSymbol())) {
+            rebuildStockHolding(trade.getAccount(), trade.getStockSymbol(), trade.getStockName());
+        }
+
         return TradeResponse.from(trade);
     }
 
@@ -127,68 +135,51 @@ public class TradeService {
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.TRADE_NOT_FOUND));
 
         validateNoLaterTrade(trade);
-        rollbackTradeFromAccount(trade);
+        applyCashEffect(trade.getAccount(), reverse(TradeCommand.from(trade)));
 
         tradeRepository.delete(trade);
+        rebuildStockHolding(trade.getAccount(), trade.getStockSymbol(), trade.getStockName());
     }
 
     private void validateNoLaterTrade(Trade trade) {
-        boolean existsLaterTrade = tradeRepository.existsByAccountIdAndStockSymbolAndTradeDateTimeAfter(
-                trade.getAccount().getId(),
-                trade.getStockSymbol(),
-                trade.getTradeDateTime()
-        );
+        boolean existsLaterTrade = tradeRepository
+                .findByAccountIdAndStockSymbolOrderByTradeDateTimeAscIdAsc(
+                        trade.getAccount().getId(), trade.getStockSymbol())
+                .stream()
+                .anyMatch(other -> other.getTradeDateTime().isAfter(trade.getTradeDateTime())
+                        || (other.getTradeDateTime().equals(trade.getTradeDateTime())
+                        && other.getId() > trade.getId()));
 
         if (existsLaterTrade) {
             throw new BadRequestException(ErrorMessage.TRADE_HAS_LATER_TRADE);
         }
     }
 
-    private void rollbackTradeFromAccount(Trade trade) {
-        TradeCommand command = TradeCommand.from(trade);
-        TradeCommand rollbackCommand = reverse(command);
-
-        applyTradeToAccount(trade.getAccount(), rollbackCommand);
-    }
-
-    private void applyTradeToAccount(Account account, TradeCommand command) {
+    private void applyCashEffect(Account account, TradeCommand command) {
+        int amount = calculateTradeAmount(command);
         if (command.tradeType() == TradeType.BUY) {
-            applyBuyEffect(account, command);
-        }
-
-        if (command.tradeType() == TradeType.SELL) {
-            applySellEffect(account, command);
+            account.decreaseCash(amount);
+        } else {
+            account.increaseCash(amount);
         }
     }
 
-    private void applyBuyEffect(Account account, TradeCommand command) {
-        int tradeAmount = calculateTradeAmount(command);
-
-        account.decreaseCash(tradeAmount);
-
+    private void rebuildStockHolding(Account account, String stockSymbol, String stockName) {
+        // Replay remaining trades instead of treating cancellation as an opposite trade.
+        List<Trade> trades = tradeRepository.findByAccountIdAndStockSymbolOrderByTradeDateTimeAscIdAsc(
+                account.getId(), stockSymbol);
         StockHolding stockHolding = stockHoldingRepository
-                .findByAccountIdAndStockSymbol(account.getId(), command.stockSymbol())
-                .orElseGet(() -> new StockHolding(
-                        account,
-                        command.stockName(),
-                        command.stockSymbol(),
-                        0,
-                        0
-                ));
-
-        stockHolding.buy(command.tradePrice(), command.quantity());
+                .findByAccountIdAndStockSymbol(account.getId(), stockSymbol)
+                .orElseGet(() -> new StockHolding(account, stockName, stockSymbol, 0, 0));
+        stockHolding.resetPosition();
+        for (Trade remainingTrade : trades) {
+            if (remainingTrade.getTradeType() == TradeType.BUY) {
+                stockHolding.buy(remainingTrade.getTradePrice(), remainingTrade.getQuantity());
+            } else {
+                stockHolding.sell(remainingTrade.getQuantity());
+            }
+        }
         stockHoldingRepository.save(stockHolding);
-    }
-
-    private void applySellEffect(Account account, TradeCommand command) {
-        int tradeAmount = calculateTradeAmount(command);
-
-        StockHolding stockHolding = stockHoldingRepository
-                .findByAccountIdAndStockSymbol(account.getId(), command.stockSymbol())
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.STOCK_HOLDING_NOT_FOUND));
-
-        stockHolding.sell(command.quantity());
-        account.increaseCash(tradeAmount);
     }
 
     private TradeCommand reverse(TradeCommand command) {

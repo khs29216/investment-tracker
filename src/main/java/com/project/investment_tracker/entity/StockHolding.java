@@ -73,6 +73,12 @@ public class StockHolding {
         return id;
     }
 
+    public void resetPosition() {
+        this.quantity = 0;
+        this.averagePrice = 0;
+        this.totalInvestmentAmount = 0;
+    }
+
     public Account getAccount() {
         return account;
     }
