@@ -57,8 +57,6 @@ public class Trade {
     }
 
     public void update(
-            String stockName,
-            String stockSymbol,
             TradeType tradeType,
             Long tradePrice,
             Integer quantity,
@@ -66,8 +64,6 @@ public class Trade {
             String memo,
             PlanAction planAction
     ) {
-        this.stockName = stockName;
-        this.stockSymbol = stockSymbol;
         this.tradeType = tradeType;
         this.tradePrice = tradePrice;
         this.quantity = quantity;
@@ -116,4 +112,3 @@ public class Trade {
         return planAction;
     }
 }
-

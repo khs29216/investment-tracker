@@ -81,7 +81,7 @@ class TradeCancellationTests {
         create(TradeType.BUY, 100, 10, 0);
         Long sale = create(TradeType.SELL, 200, 5, 1);
         assertThrows(BadRequestException.class,
-                () -> service.updateTrade(sale, update("TEST", TradeType.SELL, 200, 11, 1)));
+                () -> service.updateTrade(sale, update(TradeType.SELL, 200, 11, 1)));
         assertPosition(5, 100, 500, 10000);
         assertEquals(5, trades.findById(sale).orElseThrow().getQuantity());
     }
@@ -101,7 +101,7 @@ class TradeCancellationTests {
         create(TradeType.BUY, 100, 10, 0);
         Long sale = create(TradeType.SELL, 200, 5, 1);
         assertThrows(BadRequestException.class,
-                () -> service.updateTrade(sale, update("TEST", TradeType.SELL, 200, 5, -1)));
+                () -> service.updateTrade(sale, update(TradeType.SELL, 200, 5, -1)));
         assertPosition(5, 100, 500, 10000);
     }
 
@@ -127,13 +127,31 @@ class TradeCancellationTests {
         assertPosition(2, 100L, 202L, 9808L);
     }
 
+    @Test
+    @DisplayName("거래 가격과 수량을 수정해도 기존 종목과 계좌는 유지된다")
+    void updatingTradePreservesStockAndAccount() {
+        Long buy = create(TradeType.BUY, 100L, 10, 0);
+        var response = service.updateTrade(buy, update(TradeType.BUY, 200L, 5, 1));
+
+        assertEquals("Test", response.stockName());
+        assertEquals("TEST", response.stockSymbol());
+        assertEquals(accountId, response.accountId());
+        var saved = trades.findById(buy).orElseThrow();
+        assertEquals("Test", saved.getStockName());
+        assertEquals("TEST", saved.getStockSymbol());
+        assertEquals(200L, saved.getTradePrice());
+        assertEquals(5, saved.getQuantity());
+        assertPosition(5, 200L, 1000L, 9000L);
+        assertEquals(1, holdings.findByAccountId(accountId).size());
+    }
+
     private Long create(TradeType type, long price, int quantity, int day) {
         return service.createTrade(new TradeCreateRequest(accountId, "Test", "TEST", type,
                 price, quantity, start.plusDays(day), null, null)).id();
     }
 
-    private TradeUpdateRequest update(String symbol, TradeType type, long price, int quantity, int day) {
-        return new TradeUpdateRequest("Test", symbol, type, price, quantity,
+    private TradeUpdateRequest update(TradeType type, long price, int quantity, int day) {
+        return new TradeUpdateRequest(type, price, quantity,
                 start.plusDays(day), null, null);
     }
 

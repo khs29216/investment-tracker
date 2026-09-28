@@ -103,16 +103,12 @@ public class TradeService {
 
         validateNoLaterTrade(trade);
 
-        String previousStockSymbol = trade.getStockSymbol();
-        String previousStockName = trade.getStockName();
         applyCashEffect(trade.getAccount(), reverse(TradeCommand.from(trade)));
         applyCashEffect(trade.getAccount(), TradeCommand.from(request));
 
         PlanAction planAction = findPlanActionOrNull(request.planActionId());
 
         trade.update(
-                request.stockName(),
-                request.stockSymbol(),
                 request.tradeType(),
                 request.tradePrice(),
                 request.quantity(),
@@ -121,10 +117,7 @@ public class TradeService {
                 planAction
         );
 
-        rebuildStockHolding(trade.getAccount(), previousStockSymbol, previousStockName);
-        if (!previousStockSymbol.equals(trade.getStockSymbol())) {
-            rebuildStockHolding(trade.getAccount(), trade.getStockSymbol(), trade.getStockName());
-        }
+        rebuildStockHolding(trade.getAccount(), trade.getStockSymbol(), trade.getStockName());
 
         return TradeResponse.from(trade);
     }
@@ -188,8 +181,6 @@ public class TradeService {
                 : TradeType.BUY;
 
         return new TradeCommand(
-                command.stockName(),
-                command.stockSymbol(),
                 reversedTradeType,
                 command.tradePrice(),
                 command.quantity()
@@ -201,16 +192,12 @@ public class TradeService {
     }
 
     private record TradeCommand(
-            String stockName,
-            String stockSymbol,
             TradeType tradeType,
             Long tradePrice,
             Integer quantity
     ) {
         private static TradeCommand from(TradeCreateRequest request) {
             return new TradeCommand(
-                    request.stockName(),
-                    request.stockSymbol(),
                     request.tradeType(),
                     request.tradePrice(),
                     request.quantity()
@@ -219,8 +206,6 @@ public class TradeService {
 
         private static TradeCommand from(TradeUpdateRequest request) {
             return new TradeCommand(
-                    request.stockName(),
-                    request.stockSymbol(),
                     request.tradeType(),
                     request.tradePrice(),
                     request.quantity()
@@ -229,8 +214,6 @@ public class TradeService {
 
         private static TradeCommand from(Trade trade) {
             return new TradeCommand(
-                    trade.getStockName(),
-                    trade.getStockSymbol(),
                     trade.getTradeType(),
                     trade.getTradePrice(),
                     trade.getQuantity()
