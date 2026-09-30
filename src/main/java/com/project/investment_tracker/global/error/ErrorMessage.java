@@ -2,6 +2,8 @@ package com.project.investment_tracker.global.error;
 
 public final class ErrorMessage {
 
+    public static final String STOCK_SEARCH_UNAVAILABLE = "종목 목록을 불러올 수 없습니다. 잠시 후 다시 시도해주세요.";
+
     public static final String INVESTMENT_PLAN_NOT_FOUND = "투자 계획을 찾을 수 없습니다.";
     public static final String PLAN_ACTION_NOT_FOUND = "계획 액션을 찾을 수 없습니다.";
     public static final String TRADE_NOT_FOUND = "거래 기록을 찾을 수 없습니다.";
