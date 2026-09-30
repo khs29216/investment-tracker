@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import StockSearchInput from './StockSearchInput'
 import './App.css'
 
 const DASHBOARD_API_URL = 'http://localhost:8080/api/account/1/dashboard'
@@ -252,6 +253,10 @@ function App() {
 
   const handleTradeSubmit = (event) => {
     event.preventDefault()
+    if (!tradeForm.stockSymbol) {
+      setTradeMessage('Select a stock from the search results.')
+      return
+    }
     setIsSubmitting(true)
     setTradeMessage('')
 
@@ -303,6 +308,10 @@ function App() {
 
   const handlePlanSubmit = (event) => {
     event.preventDefault()
+    if (!planForm.stockSymbol) {
+      setPlanMessage('Select a stock from the search results.')
+      return
+    }
     setIsSubmitting(true)
     setPlanMessage('')
 
@@ -412,17 +421,13 @@ function App() {
     ? planActions.filter((action) => action.investmentPlanId === selectedPlan.id)
     : []
   const availablePlanActions = planActions.filter((action) => {
-    const stockName = tradeForm.stockName.trim().toLowerCase()
     const stockSymbol = tradeForm.stockSymbol.trim().toLowerCase()
 
-    if (!stockName && !stockSymbol) {
+    if (!stockSymbol) {
       return false
     }
 
-    return (
-      (!!stockName && action.stockName.toLowerCase().includes(stockName)) ||
-      (!!stockSymbol && action.stockSymbol.toLowerCase() === stockSymbol)
-    )
+    return action.stockSymbol.toLowerCase() === stockSymbol
   })
 
   return (
@@ -723,29 +728,16 @@ function App() {
             </div>
 
             <form className="cash-form" onSubmit={handleTradeSubmit}>
-              <label>
-                Stock Name
-                <input
-                  type="text"
-                  name="stockName"
-                  value={tradeForm.stockName}
-                  onChange={handleTradeFormChange}
-                  placeholder="Samsung Electronics"
-                  required
-                />
-              </label>
-
-              <label>
-                Stock Symbol
-                <input
-                  type="text"
-                  name="stockSymbol"
-                  value={tradeForm.stockSymbol}
-                  onChange={handleTradeFormChange}
-                  placeholder="005930"
-                  required
-                />
-              </label>
+              <StockSearchInput
+                stockName={tradeForm.stockName}
+                stockSymbol={tradeForm.stockSymbol}
+                onSelect={(stock) => setTradeForm((previous) => ({
+                  ...previous,
+                  stockName: stock.stockName,
+                  stockSymbol: stock.stockSymbol,
+                  planActionId: '',
+                }))}
+              />
 
               <label>
                 Plan Action
@@ -936,29 +928,15 @@ function App() {
             </div>
 
             <form className="cash-form" onSubmit={handlePlanSubmit}>
-              <label>
-                Stock Name
-                <input
-                  type="text"
-                  name="stockName"
-                  value={planForm.stockName}
-                  onChange={handlePlanFormChange}
-                  placeholder="Samsung Electronics"
-                  required
-                />
-              </label>
-
-              <label>
-                Stock Symbol
-                <input
-                  type="text"
-                  name="stockSymbol"
-                  value={planForm.stockSymbol}
-                  onChange={handlePlanFormChange}
-                  placeholder="005930"
-                  required
-                />
-              </label>
+              <StockSearchInput
+                stockName={planForm.stockName}
+                stockSymbol={planForm.stockSymbol}
+                onSelect={(stock) => setPlanForm((previous) => ({
+                  ...previous,
+                  stockName: stock.stockName,
+                  stockSymbol: stock.stockSymbol,
+                }))}
+              />
 
               <label>
                 Total Budget
