@@ -86,7 +86,6 @@ public class AccountDashboardService {
             return BigDecimal.ZERO.setScale(1);
         }
 
-        // 수익률은 백분율로 계산하고 소수 첫째 자리까지 반올림한다.
         return BigDecimal.valueOf(profitLoss)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(investmentAmount), 1, RoundingMode.HALF_UP);

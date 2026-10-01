@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import StockSearchInput from './StockSearchInput'
+import PerformanceView from './PerformanceView'
 import './App.css'
 
 const DASHBOARD_API_URL = 'http://localhost:8080/api/account/1/dashboard'
@@ -435,10 +436,15 @@ function App() {
       <header className="dashboard-header">
         <div>
           <p className="eyebrow">Investment Tracker</p>
-          <h1>{currentView === 'account' ? dashboard.accountName : 'Plan Dashboard'}</h1>
+          <h1>{currentView === 'account' ? dashboard.accountName : currentView === 'plans' ? 'Plan Dashboard' : 'Realized Performance'}</h1>
         </div>
         <div className="header-actions">
           <nav className="view-switch" aria-label="Dashboard views">
+            <button
+              type="button"
+              className={currentView === 'performance' ? 'view-switch-button active' : 'view-switch-button'}
+              onClick={() => setCurrentView('performance')}
+            >Performance</button>
             <button
               type="button"
               className={currentView === 'account' ? 'view-switch-button active' : 'view-switch-button'}
@@ -484,7 +490,7 @@ function App() {
                 Cash Transaction
               </button>
             </>
-          ) : (
+          ) : currentView === 'plans' ? (
             <button
               type="button"
               className="cash-action-button"
@@ -495,7 +501,7 @@ function App() {
             >
               New Plan
             </button>
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -584,6 +590,8 @@ function App() {
           </section>
         </>
       )}
+
+      {currentView === 'performance' && <PerformanceView accountId={ACCOUNT_ID} />}
 
       {currentView === 'plans' && (
         <section className="plans-section">

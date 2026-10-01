@@ -480,6 +480,29 @@ tbody tr:last-child td {
   text-align: left;
 }
 
+.performance-view {
+  display: grid;
+  gap: 32px;
+  min-width: 0;
+}
+
+.performance-view section {
+  min-width: 0;
+}
+
+.performance-table-scroll {
+  overflow-x: auto;
+}
+
+.performance-table-scroll table {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.view-switch {
+  flex-wrap: wrap;
+}
+
 .stock-search {
   display: grid;
   gap: 8px;
