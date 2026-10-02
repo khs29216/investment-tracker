@@ -23,7 +23,7 @@ public class KisTokenClient {
                 .build();
     }
 
-    public String getAccessToken() {
+    public synchronized String getAccessToken() {
         if (accessToken == null || expiresAt == null || LocalDateTime.now().isAfter(expiresAt)) {
             requestAccessToken();
         }

@@ -13,6 +13,13 @@ import java.time.LocalDateTime;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(StockPriceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleStockPriceUnavailable(StockPriceUnavailableException exception,
+                                                                   HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ErrorResponse(
+                LocalDateTime.now(), 503, "Service Unavailable", exception.getMessage(), request.getRequestURI()));
+    }
+
     @ExceptionHandler(StockSearchUnavailableException.class)
     public ResponseEntity<ErrorResponse> handleStockSearchUnavailable(
             StockSearchUnavailableException exception,
