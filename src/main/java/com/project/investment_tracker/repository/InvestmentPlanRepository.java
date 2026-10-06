@@ -4,4 +4,5 @@ import com.project.investment_tracker.entity.InvestmentPlan;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InvestmentPlanRepository extends JpaRepository<InvestmentPlan, Long> {
+    java.util.List<InvestmentPlan> findByAccountIdAndStockSymbol(Long accountId, String stockSymbol);
 }

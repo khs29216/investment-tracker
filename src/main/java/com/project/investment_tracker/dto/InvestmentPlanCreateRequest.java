@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record InvestmentPlanCreateRequest(
+        @NotNull @Positive Long accountId,
+        @NotNull java.time.LocalDate plannedEndDate,
         @NotBlank(message = "종목명은 필수입니다.")
         String stockName,
         @NotBlank(message = "종목 코드는 필수입니다.")

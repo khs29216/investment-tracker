@@ -41,7 +41,7 @@ public class TradeService {
     }
 
     private Account findAccount(Long accountId) {
-        return accountRepository.findById(accountId)
+        return accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.ACCOUNT_NOT_FOUND));
     }
 
@@ -101,6 +101,7 @@ public class TradeService {
         Trade trade = tradeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.TRADE_NOT_FOUND));
 
+        findAccount(trade.getAccount().getId());
         validateNoLaterTrade(trade);
 
         PlanAction previousPlanAction = trade.getPlanAction();
@@ -134,6 +135,7 @@ public class TradeService {
         Trade trade = tradeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.TRADE_NOT_FOUND));
 
+        findAccount(trade.getAccount().getId());
         validateNoLaterTrade(trade);
         PlanAction planAction = trade.getPlanAction();
         applyCashEffect(trade.getAccount(), reverse(TradeCommand.from(trade)));

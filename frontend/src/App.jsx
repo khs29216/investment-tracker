@@ -97,6 +97,7 @@ function App() {
     memo: '',
   })
   const [planForm, setPlanForm] = useState({
+    plannedEndDate: '',
     stockName: '',
     stockSymbol: '',
     totalBudget: '',
@@ -325,6 +326,8 @@ function App() {
         stockName: planForm.stockName,
         stockSymbol: planForm.stockSymbol,
         totalBudget: Number(planForm.totalBudget),
+        accountId: ACCOUNT_ID,
+        plannedEndDate: planForm.plannedEndDate,
         reason: planForm.reason,
       }),
     })
@@ -337,6 +340,7 @@ function App() {
       })
       .then(() => {
         setPlanForm({
+          plannedEndDate: '',
           stockName: '',
           stockSymbol: '',
           totalBudget: '',
@@ -618,6 +622,12 @@ function App() {
                   </div>
 
                   <dl className="plan-meta">
+                    <div><dt>Start</dt><dd>{formatDateTime(plan.startedAt)}</dd></div>
+                    <div><dt>Scheduled End</dt><dd>{plan.plannedEndDate || '-'}</dd></div>
+                    <div><dt>Ended</dt><dd>{formatDateTime(plan.endedAt)}</dd></div>
+                    <div><dt>Initial Quantity</dt><dd>{plan.initialQuantity ?? '-'}</dd></div>
+                    <div><dt>Initial Cost</dt><dd>{plan.initialCostBasis == null ? '-' : formatCurrency(plan.initialCostBasis)}</dd></div>
+                    <div><dt>Initial Price</dt><dd>{plan.initialPrice == null ? '-' : formatCurrency(plan.initialPrice)}</dd></div>
                     <div>
                       <dt>Budget</dt>
                       <dd>{formatCurrency(plan.totalBudget)}</dd>
@@ -637,6 +647,25 @@ function App() {
                   >
                     View Actions
                   </button>
+                  {plan.startedAt && plan.planStatus === 'ACTIVE' && (
+                    <button type="button" className="history-button" disabled={isSubmitting}
+                      onClick={async () => {
+                        if (!window.confirm('End this plan? A new plan for this stock can start tomorrow.')) return
+                        setIsSubmitting(true)
+                        try {
+                          const response = await fetch(`${PLAN_API_URL}/${plan.id}/close`, { method: 'POST' })
+                          if (!response.ok) {
+                            const body = await response.json()
+                            throw new Error(body.message || 'Failed to end plan.')
+                          }
+                          await loadPageData()
+                        } catch (error) {
+                          window.alert(error.message)
+                        } finally {
+                          setIsSubmitting(false)
+                        }
+                      }}>End Plan</button>
+                  )}
                 </article>
               )
             })}
@@ -957,6 +986,12 @@ function App() {
                   placeholder="1000000"
                   required
                 />
+              </label>
+
+              <label>
+                Scheduled End Date
+                <input type="date" name="plannedEndDate" value={planForm.plannedEndDate}
+                  onChange={handlePlanFormChange} required />
               </label>
 
               <label>

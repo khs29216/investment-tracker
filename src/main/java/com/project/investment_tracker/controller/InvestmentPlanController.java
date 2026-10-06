@@ -42,4 +42,9 @@ public class InvestmentPlanController {
     public void deletePlan(@PathVariable Long id) {
         investmentPlanService.deletePlan(id);
     }
+
+    @PostMapping("/{id}/close")
+    public InvestmentPlanResponse closePlan(@PathVariable Long id) {
+        return investmentPlanService.closePlan(id);
+    }
 }
