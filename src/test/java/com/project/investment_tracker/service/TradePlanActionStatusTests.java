@@ -185,15 +185,13 @@ class TradePlanActionStatusTests {
     }
 
     @Test
-    @DisplayName("액션 목표 수량을 바꾸면 현재 연결 수량으로 상태를 재계산한다")
-    void changingTargetRecalculatesStatus() {
+    @DisplayName("실제 거래가 연결된 액션은 목표 수량을 변경할 수 없다")
+    void changingExecutedTargetIsRejected() {
         Long action = action();
         buy(action, 0);
-        actionService.updatePlanAction(plan.getId(), action,
-                new PlanActionUpdateRequest(ActionType.BUY, 100L, 1, null));
-        assertStatus(action, ActionStatus.EXECUTED);
-        actionService.updatePlanAction(plan.getId(), action,
-                new PlanActionUpdateRequest(ActionType.BUY, 100L, 2, null));
+        assertThrows(com.project.investment_tracker.global.error.BadRequestException.class,
+                () -> actionService.updatePlanAction(plan.getId(), action,
+                        new PlanActionUpdateRequest(ActionType.BUY, 100L, 1, null)));
         assertStatus(action, ActionStatus.IN_PROGRESS);
     }
 

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TradeRepository extends JpaRepository<Trade, Long> {
+    boolean existsByPlanActionId(Long planActionId);
     List<Trade> findByAccountIdOrderByTradeDateTimeAscIdAsc(Long accountId);
     @Query("select coalesce(sum(t.quantity), 0) from Trade t where t.planAction.id = :planActionId")
     long sumQuantityByPlanActionId(@Param("planActionId") Long planActionId);

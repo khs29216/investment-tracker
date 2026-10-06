@@ -24,6 +24,9 @@ public class PlanAction {
     @Enumerated(EnumType.STRING)
     private ActionStatus actionStatus;
 
+    @OneToOne(mappedBy = "planAction", cascade = CascadeType.ALL, orphanRemoval = true)
+    private PlanActionSimulation simulation;
+
     protected PlanAction() {
     }
 
@@ -40,6 +43,7 @@ public class PlanAction {
         this.quantity = quantity;
         this.memo = memo;
         this.actionStatus = ActionStatus.PENDING;
+        this.simulation = new PlanActionSimulation(this);
     }
 
     public void update(
@@ -62,6 +66,13 @@ public class PlanAction {
         } else {
             this.actionStatus = ActionStatus.EXECUTED;
         }
+    }
+
+    public PlanActionSimulation getSimulation() { return simulation; }
+
+    public PlanActionSimulation initializeSimulation() {
+        if (simulation == null) simulation = new PlanActionSimulation(this);
+        return simulation;
     }
 
     public Long getId() {

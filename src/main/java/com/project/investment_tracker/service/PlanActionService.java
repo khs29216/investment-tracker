@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import com.project.investment_tracker.entity.SimulationStatus;
+import com.project.investment_tracker.global.error.BadRequestException;
 
 @Service
 public class PlanActionService {
@@ -43,6 +46,7 @@ public class PlanActionService {
         return planAction;
     }
 
+    @Transactional
     public PlanActionResponse createPlanAction(Long investmentPlanId, PlanActionCreateRequest request) {
         InvestmentPlan investmentPlan = investmentPlanRepository.findById(investmentPlanId)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.INVESTMENT_PLAN_NOT_FOUND));
@@ -60,6 +64,7 @@ public class PlanActionService {
         return PlanActionResponse.from(savedPlanAction);
     }
 
+    @Transactional(readOnly = true)
     public List<PlanActionResponse> getPlanActions(Long investmentPlanId) {
         return planActionRepository.findByInvestmentPlanId(investmentPlanId)
                 .stream()
@@ -67,6 +72,7 @@ public class PlanActionService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public PlanActionResponse getPlanAction(Long planId, Long actionId) {
         PlanAction planAction = findActionInPlan(planId, actionId);
 
@@ -75,7 +81,13 @@ public class PlanActionService {
 
     @Transactional
     public PlanActionResponse updatePlanAction(Long planId, Long actionId, PlanActionUpdateRequest request) {
+        lockAction(actionId);
         PlanAction planAction = findActionInPlan(planId, actionId);
+
+        boolean coreChanged = planAction.getActionType() != request.actionType()
+                || !Objects.equals(planAction.getTriggerPrice(), request.triggerPrice())
+                || !Objects.equals(planAction.getQuantity(), request.quantity());
+        if (coreChanged) validateUnexecuted(planAction);
 
         planAction.update(
                 request.actionType(),
@@ -88,9 +100,24 @@ public class PlanActionService {
         return PlanActionResponse.from(planAction);
     }
 
+    @Transactional
     public void deletePlanAction(Long planId, Long actionId) {
+        lockAction(actionId);
         PlanAction actionInPlan = findActionInPlan(planId, actionId);
+        validateUnexecuted(actionInPlan);
         planActionRepository.delete(actionInPlan);
+    }
+
+    private void lockAction(Long id) {
+        planActionRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.PLAN_ACTION_NOT_FOUND));
+    }
+
+    private void validateUnexecuted(PlanAction action) {
+        if ((action.getSimulation() != null && action.getSimulation().getStatus() == SimulationStatus.EXECUTED)
+                || tradeRepository.existsByPlanActionId(action.getId())) {
+            throw new BadRequestException("실제 거래가 연결되었거나 가상 체결된 액션의 조건 수정 및 삭제는 불가능합니다.");
+        }
     }
 
 }

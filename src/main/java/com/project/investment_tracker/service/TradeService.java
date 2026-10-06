@@ -50,7 +50,7 @@ public class TradeService {
             return null;
         }
 
-        return planActionRepository.findById(planActionId)
+        return planActionRepository.findByIdForUpdate(planActionId)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.PLAN_ACTION_NOT_FOUND));
     }
 
