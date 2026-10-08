@@ -149,6 +149,8 @@ public class TradeService {
         if (planAction == null) {
             return;
         }
+        if (planAction.getInvestmentPlan().getPlanStatus() == com.project.investment_tracker.entity.PlanStatus.DRAFT)
+            throw new BadRequestException("작성 중인 계획의 액션에는 거래를 연결할 수 없습니다.");
         // JPA의 AUTO flush로 변경된 거래를 반영한 뒤 연결 수량을 합산한다.
         planAction.updateExecutionStatus(tradeRepository.sumQuantityByPlanActionId(planAction.getId()));
     }

@@ -11,7 +11,8 @@ public record InvestmentPlanResponse (
         String reason,
         PlanStatus planStatus,
         Long accountId, Integer initialQuantity, Long initialCostBasis, Long initialPrice, Long initialCash,
-        java.time.LocalDateTime startedAt, java.time.LocalDate plannedEndDate, java.time.LocalDateTime endedAt
+        java.time.LocalDateTime startedAt, java.time.LocalDate plannedEndDate, java.time.LocalDateTime endedAt,
+        java.time.LocalDateTime createdAt
 ) {
     public static InvestmentPlanResponse from(InvestmentPlan investmentPlan) {
         return new InvestmentPlanResponse(
@@ -24,7 +25,8 @@ public record InvestmentPlanResponse (
                 investmentPlan.getAccount() == null ? null : investmentPlan.getAccount().getId(),
                 investmentPlan.getInitialQuantity(), investmentPlan.getInitialCostBasis(),
                 investmentPlan.getInitialPrice(), investmentPlan.getInitialCash(),
-                investmentPlan.getStartedAt(), investmentPlan.getPlannedEndDate(), investmentPlan.getEndedAt()
+                investmentPlan.getStartedAt(), investmentPlan.getPlannedEndDate(), investmentPlan.getEndedAt(),
+                investmentPlan.getCreatedAt()
         );
     }
 }

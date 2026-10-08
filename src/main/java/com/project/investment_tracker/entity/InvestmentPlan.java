@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Objects;
 import com.project.investment_tracker.global.error.BadRequestException;
 
 @Entity
@@ -31,6 +30,7 @@ public class InvestmentPlan {
     private Long initialPrice;
     private Long initialCash;
     private LocalDateTime startedAt;
+    private LocalDateTime createdAt;
     private LocalDate plannedEndDate;
     private LocalDateTime endedAt;
     protected InvestmentPlan() {
@@ -53,8 +53,38 @@ public class InvestmentPlan {
         this.initialPrice = price;
         this.initialCash = budget;
         this.startedAt = startedAt;
+        this.createdAt = startedAt;
         this.plannedEndDate = endDate;
     }
+
+    public static InvestmentPlan draft(Account account, String name, String symbol, Long budget,
+                                       String reason, LocalDate endDate, LocalDateTime now) {
+        var plan = new InvestmentPlan(name, symbol, budget, reason);
+        plan.account = account;
+        plan.planStatus = PlanStatus.DRAFT;
+        plan.plannedEndDate = endDate;
+        plan.createdAt = now;
+        return plan;
+    }
+
+    public void requireDraft() {
+        if (planStatus != PlanStatus.DRAFT) throw new BadRequestException("작성 중인 계획만 변경할 수 있습니다.");
+    }
+
+    public void start(int quantity, long costBasis, long price, LocalDateTime now) {
+        requireDraft();
+        if (plannedEndDate == null || !plannedEndDate.isAfter(now.toLocalDate()))
+            throw new BadRequestException("예정 종료일은 시작일 이후여야 합니다.");
+        initialQuantity = quantity;
+        initialCostBasis = costBasis;
+        initialPrice = price;
+        initialCash = totalBudget;
+        startedAt = now;
+        planStatus = PlanStatus.ACTIVE;
+    }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void changeEndDate(LocalDate date) { requireDraft(); plannedEndDate = date; }
 
     public void close(LocalDateTime now) {
         if (startedAt == null) throw new BadRequestException("초기 상태가 없는 기존 계획은 종료 분석 대상이 아닙니다.");
@@ -81,11 +111,7 @@ public class InvestmentPlan {
             Long totalBudget,
             String reason
     ) {
-        if (startedAt != null && (getPlanStatus() != PlanStatus.ACTIVE
-                || !Objects.equals(this.stockName, stockName) || !Objects.equals(this.stockSymbol, stockSymbol)
-                || !Objects.equals(this.totalBudget, totalBudget))) {
-            throw new BadRequestException("시작한 계획의 종목과 예산은 변경할 수 없으며 종료된 계획은 수정할 수 없습니다.");
-        }
+        requireDraft();
         this.stockName = stockName;
         this.stockSymbol = stockSymbol;
         this.totalBudget = totalBudget;

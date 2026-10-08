@@ -47,4 +47,9 @@ public class InvestmentPlanController {
     public InvestmentPlanResponse closePlan(@PathVariable Long id) {
         return investmentPlanService.closePlan(id);
     }
+
+    @PostMapping("/{id}/start")
+    public InvestmentPlanResponse startPlan(@PathVariable Long id) {
+        return investmentPlanService.startPlan(id);
+    }
 }

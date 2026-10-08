@@ -13,6 +13,10 @@ public record InvestmentPlanUpdateRequest(
         @Positive(message = "총 예산은 양수여야 합니다.")
         Long totalBudget,
         @NotBlank(message = "계획 이유는 필수입니다.")
-        String reason
+        String reason,
+        java.time.LocalDate plannedEndDate
 ) {
+    public InvestmentPlanUpdateRequest(String stockName, String stockSymbol, Long totalBudget, String reason) {
+        this(stockName, stockSymbol, totalBudget, reason, null);
+    }
 }

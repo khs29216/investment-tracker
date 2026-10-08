@@ -32,7 +32,7 @@ class PlanActionSimulationTests {
                 0, 0, 100, today.minusDays(5).atStartOfDay(), today.plusDays(5)));
     }
     private PlanActionResponse action(InvestmentPlan plan) {
-        return actions.createPlanAction(plan.getId(), new PlanActionCreateRequest(ActionType.BUY, 100L, 10, "test"));
+        return PlanActionResponse.from(actionRepository.save(new PlanAction(plan, ActionType.BUY, 100L, 10, "test")));
     }
 
     @Test @DisplayName("동일한 체결 요청은 안전하게 재처리하되, 기록을 임의로 바꾸거나 실제 거래 상태에 영향을 주면 안 된다")
@@ -53,7 +53,7 @@ class PlanActionSimulationTests {
         assertThrows(BadRequestException.class, () -> simulations.recordExecution(plan.getId(), action.id(), today.minusDays(2)));
     }
 
-    @Test @DisplayName("가상 체결 이후 조건 변경과 삭제는 막고 메모 수정은 허용한다")
+    @Test @DisplayName("시작 후에는 가상 체결 여부와 관계없이 조건과 메모를 고정한다")
     void executedActionsAreProtected() {
         var plan = plan();
         var action = action(plan);
@@ -61,13 +61,15 @@ class PlanActionSimulationTests {
         assertThrows(BadRequestException.class, () -> actions.updatePlanAction(plan.getId(), action.id(),
                 new PlanActionUpdateRequest(ActionType.BUY, 200L, 10, "changed")));
         assertThrows(BadRequestException.class, () -> actions.deletePlanAction(plan.getId(), action.id()));
-        assertEquals("memo", actions.updatePlanAction(plan.getId(), action.id(),
-                new PlanActionUpdateRequest(ActionType.BUY, 100L, 10, "memo")).memo());
+        assertThrows(BadRequestException.class, () -> actions.updatePlanAction(plan.getId(), action.id(),
+                new PlanActionUpdateRequest(ActionType.BUY, 100L, 10, "memo")));
     }
 
     @Test @DisplayName("미체결 액션 삭제 시 연결된 상태도 삭제한다")
     void pendingActionCanBeEditedAndDeleted() {
-        var plan = plan();
+        var account = accounts.save(new Account("Draft", 10000L));
+        var plan = plans.save(InvestmentPlan.draft(account, "삼성전자", "005930", 10000L, "test",
+                today.plusDays(5), today.atStartOfDay()));
         var action = action(plan);
         actions.updatePlanAction(plan.getId(), action.id(), new PlanActionUpdateRequest(ActionType.BUY, 200L, 5, ""));
         actions.deletePlanAction(plan.getId(), action.id());

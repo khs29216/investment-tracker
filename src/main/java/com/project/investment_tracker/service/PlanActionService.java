@@ -48,9 +48,10 @@ public class PlanActionService {
 
     @Transactional
     public PlanActionResponse createPlanAction(Long investmentPlanId, PlanActionCreateRequest request) {
-        InvestmentPlan investmentPlan = investmentPlanRepository.findById(investmentPlanId)
+        InvestmentPlan investmentPlan = investmentPlanRepository.findByIdForUpdate(investmentPlanId)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.INVESTMENT_PLAN_NOT_FOUND));
 
+        investmentPlan.requireDraft();
         PlanAction planAction = new PlanAction(
                 investmentPlan,
                 request.actionType(),
@@ -81,6 +82,7 @@ public class PlanActionService {
 
     @Transactional
     public PlanActionResponse updatePlanAction(Long planId, Long actionId, PlanActionUpdateRequest request) {
+        requireDraft(planId);
         lockAction(actionId);
         PlanAction planAction = findActionInPlan(planId, actionId);
 
@@ -102,6 +104,7 @@ public class PlanActionService {
 
     @Transactional
     public void deletePlanAction(Long planId, Long actionId) {
+        requireDraft(planId);
         lockAction(actionId);
         PlanAction actionInPlan = findActionInPlan(planId, actionId);
         validateUnexecuted(actionInPlan);
@@ -111,6 +114,11 @@ public class PlanActionService {
     private void lockAction(Long id) {
         planActionRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.PLAN_ACTION_NOT_FOUND));
+    }
+
+    private void requireDraft(Long planId) {
+        investmentPlanRepository.findByIdForUpdate(planId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessage.INVESTMENT_PLAN_NOT_FOUND)).requireDraft();
     }
 
     private void validateUnexecuted(PlanAction action) {

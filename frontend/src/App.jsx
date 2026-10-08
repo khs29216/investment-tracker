@@ -63,6 +63,8 @@ function formatLocalDateTime(date) {
 
 function App() {
   const [currentView, setCurrentView] = useState('account')
+  const [editingPlanId, setEditingPlanId] = useState(null)
+  const [editingActionId, setEditingActionId] = useState(null)
   const [dashboard, setDashboard] = useState(null)
   const [trades, setTrades] = useState([])
   const [cashTransactions, setCashTransactions] = useState([])
@@ -317,8 +319,8 @@ function App() {
     setIsSubmitting(true)
     setPlanMessage('')
 
-    fetch(PLAN_API_URL, {
-      method: 'POST',
+    fetch(editingPlanId ? `${PLAN_API_URL}/${editingPlanId}` : PLAN_API_URL, {
+      method: editingPlanId ? 'PUT' : 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -348,6 +350,7 @@ function App() {
         })
         setPlanMessage('')
         setIsPlanModalOpen(false)
+        setEditingPlanId(null)
         return loadPageData()
       })
       .catch((error) => {
@@ -368,8 +371,8 @@ function App() {
     setIsSubmitting(true)
     setPlanActionMessage('')
 
-    fetch(`${PLAN_API_URL}/${selectedPlan.id}/actions`, {
-      method: 'POST',
+    fetch(`${PLAN_API_URL}/${selectedPlan.id}/actions${editingActionId ? `/${editingActionId}` : ''}`, {
+      method: editingActionId ? 'PUT' : 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -396,6 +399,7 @@ function App() {
         })
         setPlanActionMessage('')
         setIsPlanActionModalOpen(false)
+        setEditingActionId(null)
         return loadPageData()
       })
       .catch((error) => {
@@ -404,6 +408,23 @@ function App() {
       .finally(() => {
         setIsSubmitting(false)
       })
+  }
+
+  const runPlanCommand = async (url, method, confirmation) => {
+    if (!window.confirm(confirmation)) return
+    setIsSubmitting(true)
+    try {
+      const response = await fetch(url, { method })
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new Error(body.message || 'Plan request failed.')
+      }
+      await loadPageData()
+    } catch (error) {
+      window.alert(error.message)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isLoading) {
@@ -426,6 +447,7 @@ function App() {
     ? planActions.filter((action) => action.investmentPlanId === selectedPlan.id)
     : []
   const availablePlanActions = planActions.filter((action) => {
+    if (!investmentPlans.some((plan) => plan.id === action.investmentPlanId && plan.planStatus === 'ACTIVE')) return false
     const stockSymbol = tradeForm.stockSymbol.trim().toLowerCase()
 
     if (!stockSymbol) {
@@ -500,6 +522,8 @@ function App() {
               className="cash-action-button"
               onClick={() => {
                 setPlanMessage('')
+                setEditingPlanId(null)
+                setPlanForm({ stockName: '', stockSymbol: '', totalBudget: '', reason: '', plannedEndDate: '' })
                 setIsPlanModalOpen(true)
               }}
             >
@@ -622,6 +646,7 @@ function App() {
                   </div>
 
                   <dl className="plan-meta">
+                    <div><dt>Created</dt><dd>{formatDateTime(plan.createdAt)}</dd></div>
                     <div><dt>Start</dt><dd>{formatDateTime(plan.startedAt)}</dd></div>
                     <div><dt>Scheduled End</dt><dd>{plan.plannedEndDate || '-'}</dd></div>
                     <div><dt>Ended</dt><dd>{formatDateTime(plan.endedAt)}</dd></div>
@@ -666,6 +691,19 @@ function App() {
                         }
                       }}>End Plan</button>
                   )}
+                  {plan.planStatus === 'DRAFT' && <>
+                    <button type="button" className="history-button" onClick={() => {
+                      setEditingPlanId(plan.id)
+                      setPlanForm({ stockName: plan.stockName, stockSymbol: plan.stockSymbol,
+                        totalBudget: String(plan.totalBudget), reason: plan.reason, plannedEndDate: plan.plannedEndDate })
+                      setPlanMessage('')
+                      setIsPlanModalOpen(true)
+                    }}>Edit Draft</button>
+                    <button type="button" className="history-button" disabled={isSubmitting || actionCount === 0}
+                      onClick={() => runPlanCommand(`${PLAN_API_URL}/${plan.id}/start`, 'POST', 'Start this plan and lock its conditions?')}>Start Plan</button>
+                    <button type="button" className="history-button" disabled={isSubmitting}
+                      onClick={() => runPlanCommand(`${PLAN_API_URL}/${plan.id}`, 'DELETE', 'Delete this draft and its actions?')}>Delete Draft</button>
+                  </>}
                 </article>
               )
             })}
@@ -951,7 +989,7 @@ function App() {
           <section className="modal" role="dialog" aria-modal="true" aria-labelledby="plan-modal-title">
             <div className="modal-header">
               <div>
-                <h2 id="plan-modal-title">New Investment Plan</h2>
+                <h2 id="plan-modal-title">{editingPlanId ? 'Edit Draft' : 'New Investment Plan'}</h2>
                 <p>Create a rational plan before trading.</p>
               </div>
               <button
@@ -1038,16 +1076,20 @@ function App() {
                 <p>{selectedPlan.stockSymbol} plan action list.</p>
               </div>
               <div className="modal-header-actions">
+                {selectedPlan.planStatus === 'DRAFT' && (
                 <button
                   type="button"
                   className="history-button"
                   onClick={() => {
                     setPlanActionMessage('')
+                    setEditingActionId(null)
+                    setPlanActionForm({ actionType: 'BUY', triggerPrice: '', quantity: '', memo: '' })
                     setIsPlanActionModalOpen(true)
                   }}
                 >
                   Add Action
                 </button>
+                )}
                 <button
                   type="button"
                   className="modal-close-button"
@@ -1072,6 +1114,17 @@ function App() {
                     </span>
                   </div>
                   <div className="activity-value">{action.memo || '-'}</div>
+                  {selectedPlan.planStatus === 'DRAFT' && <div>
+                    <button type="button" className="history-button" onClick={() => {
+                      setEditingActionId(action.id)
+                      setPlanActionForm({ actionType: action.actionType, triggerPrice: String(action.triggerPrice),
+                        quantity: String(action.quantity), memo: action.memo || '' })
+                      setPlanActionMessage('')
+                      setIsPlanActionModalOpen(true)
+                    }}>Edit</button>
+                    <button type="button" className="history-button" disabled={isSubmitting}
+                      onClick={() => runPlanCommand(`${PLAN_API_URL}/${selectedPlan.id}/actions/${action.id}`, 'DELETE', 'Delete this action?')}>Delete</button>
+                  </div>}
                 </div>
               ))}
             </ActivityPanel>
@@ -1084,7 +1137,7 @@ function App() {
           <section className="modal" role="dialog" aria-modal="true" aria-labelledby="plan-action-modal-title">
             <div className="modal-header">
               <div>
-                <h2 id="plan-action-modal-title">New Plan Action</h2>
+                <h2 id="plan-action-modal-title">{editingActionId ? 'Edit Plan Action' : 'New Plan Action'}</h2>
                 <p>Add a rule to {selectedPlan.stockName}.</p>
               </div>
               <button
