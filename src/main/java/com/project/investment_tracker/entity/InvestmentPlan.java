@@ -33,6 +33,7 @@ public class InvestmentPlan {
     private LocalDateTime createdAt;
     private LocalDate plannedEndDate;
     private LocalDateTime endedAt;
+    private LocalDate simulationEvaluatedThrough;
     protected InvestmentPlan() {
     }
 
@@ -100,6 +101,18 @@ public class InvestmentPlan {
     public Long getInitialCash() { return initialCash; }
     public LocalDateTime getStartedAt() { return startedAt; }
     public LocalDate getPlannedEndDate() { return plannedEndDate; }
+    public LocalDate getSimulationEvaluatedThrough() { return simulationEvaluatedThrough; }
+
+    public void markSimulationEvaluatedThrough(LocalDate date) {
+        LocalDate endDate = getEndedAt() == null ? plannedEndDate : getEndedAt().toLocalDate();
+        if (startedAt == null || date == null || date.isBefore(startedAt.toLocalDate())
+                || endDate == null || date.isAfter(endDate)
+                || !date.isBefore(LocalDate.now(ZoneId.of("Asia/Seoul")))
+                || (simulationEvaluatedThrough != null && date.isBefore(simulationEvaluatedThrough))) {
+            throw new BadRequestException("가상 체결 평가일이 올바르지 않습니다.");
+        }
+        simulationEvaluatedThrough = date;
+    }
     public LocalDateTime getEndedAt() {
         if (endedAt != null) return endedAt;
         return getPlanStatus() == PlanStatus.COMPLETED && plannedEndDate != null

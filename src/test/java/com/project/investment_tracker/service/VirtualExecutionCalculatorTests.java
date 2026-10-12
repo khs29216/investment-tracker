@@ -113,4 +113,41 @@ class VirtualExecutionCalculatorTests {
         assertThrows(IllegalArgumentException.class, () -> run(initial, List.of(), bar(1, 120, 100)));
         assertThrows(ArithmeticException.class, () -> run(initial, List.of(buy(1, Long.MAX_VALUE, 2)), bar(1, 1, Long.MAX_VALUE)));
     }
+
+    @Test @DisplayName("확정 체결은 일봉 없이 날짜와 ID 순서로 반영하여 자산을 복원한다")
+    void restoresConfirmedExecutionsInOrder() {
+        var state = calculator.restore(State.initial(100, 0, 0, start), List.of(
+                new ConfirmedExecution(buy(3, 100, 1), start.plusDays(2)),
+                new ConfirmedExecution(sell(2, 120, 1), start.plusDays(1)),
+                new ConfirmedExecution(buy(1, 100, 1), start.plusDays(1))), start.plusDays(3));
+        assertEquals(20, state.cash());
+        assertEquals(1, state.quantity());
+        assertEquals(100, state.costBasis());
+        assertEquals(20, state.realizedProfit());
+        assertEquals(start.plusDays(3), state.processedThrough());
+        assertEquals(Set.of(1L, 2L, 3L), state.executedActionIds());
+    }
+
+    @Test @DisplayName("원가 절삭 잔액을 포함해 복원한 상태에서 미체결 매도를 이어 계산한다")
+    void restoresRoundingRemainderBeforeResuming() {
+        var initial = State.initial(1000, 2, 201, start);
+        var restored = calculator.restore(initial,
+                List.of(new ConfirmedExecution(sell(1, 110, 1), start.plusDays(1))), start.plusDays(2));
+        var resumed = run(restored, List.of(sell(2, 120, 1)), bar(3, 120, 120));
+        assertEquals(29, resumed.state().realizedProfit());
+        assertEquals(101, resumed.executions().get(0).costBasis());
+        assertEquals(0, resumed.state().costBasis());
+    }
+
+    @Test @DisplayName("확정 기록의 중복과 기간 오류 및 불가능한 자산 흐름을 거절한다")
+    void rejectsInvalidConfirmedHistory() {
+        var initial = State.initial(100, 0, 0, start);
+        var execution = new ConfirmedExecution(buy(1, 100, 1), start.plusDays(1));
+        assertThrows(IllegalArgumentException.class, () -> calculator.restore(initial,
+                List.of(execution, execution), start.plusDays(2)));
+        assertThrows(IllegalArgumentException.class, () -> calculator.restore(initial,
+                List.of(execution), start));
+        assertThrows(IllegalStateException.class, () -> calculator.restore(initial,
+                List.of(new ConfirmedExecution(sell(1, 100, 1), start.plusDays(1))), start.plusDays(2)));
+    }
 }

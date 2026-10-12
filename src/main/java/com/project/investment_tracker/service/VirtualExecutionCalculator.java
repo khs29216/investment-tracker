@@ -10,6 +10,7 @@ import java.util.*;
 @Component
 public class VirtualExecutionCalculator {
     public record Action(long id, ActionType type, long targetPrice, int quantity) {}
+    public record ConfirmedExecution(Action action, LocalDate date) {}
 
     public record State(long cash, int quantity, long costBasis, long averagePrice,
                         long realizedProfit, LocalDate processedThrough, Set<Long> executedActionIds) {
@@ -55,6 +56,30 @@ public class VirtualExecutionCalculator {
         }
 
         return buildResult(calculation, initial.processedThrough(), bars);
+    }
+
+    // 확정된 체결은 가격 조건을 재판단하지 않고 날짜와 액션 ID 순서로 자산에 반영한다.
+    public State restore(State initial, List<ConfirmedExecution> executions, LocalDate evaluatedThrough) {
+        if (evaluatedThrough.isBefore(initial.processedThrough()) || !initial.executedActionIds().isEmpty()) {
+            throw new IllegalArgumentException("자산 복원에는 초기 상태와 올바른 마지막 평가일이 필요합니다.");
+        }
+        validateAndSortActions(executions.stream().map(ConfirmedExecution::action).toList());
+        for (var execution : executions) {
+            if (execution.date() == null || !execution.date().isAfter(initial.processedThrough())
+                    || execution.date().isAfter(evaluatedThrough)) {
+                throw new IllegalArgumentException("확정된 체결일이 자산 복원 기간을 벗어났습니다.");
+            }
+        }
+        var sorted = executions.stream().sorted(Comparator.comparing(ConfirmedExecution::date)
+                .thenComparingLong(execution -> execution.action().id())).toList();
+        var calculation = new Calculation(initial);
+        for (var execution : sorted) {
+            applyExecution(calculation, execution.action(), execution.date());
+            if (!calculation.skipped.isEmpty()) {
+                throw new IllegalStateException("확정된 체결 기록을 반영하기 위한 가상 자산이 부족합니다.");
+            }
+        }
+        return buildState(calculation, evaluatedThrough);
     }
 
     private void validateCalculationPeriod(String symbol, State initial, LocalDate throughDate) {
@@ -107,11 +132,15 @@ public class VirtualExecutionCalculator {
         if (calculation.executed.contains(action.id()) || action.targetPrice() < bar.low()
                 || action.targetPrice() > bar.high()) return;
 
+        applyExecution(calculation, action, bar.date());
+    }
+
+    private void applyExecution(Calculation calculation, Action action, LocalDate date) {
         long amount = Math.multiplyExact(action.targetPrice(), (long) action.quantity());
         if (action.type() == ActionType.BUY) {
-            executeBuy(calculation, action, bar.date(), amount);
+            executeBuy(calculation, action, date, amount);
         } else {
-            executeSell(calculation, action, bar.date(), amount);
+            executeSell(calculation, action, date, amount);
         }
     }
 
@@ -155,9 +184,12 @@ public class VirtualExecutionCalculator {
                                NavigableMap<LocalDate, StockDailyPriceResponse> bars) {
         // 데이터가 없는 날을 처리 완료로 추측하지 않는다. 누락/휴장일 관리는 수집 계층에서 담당한다.
         LocalDate processed = bars.isEmpty() ? processedThrough : bars.lastKey();
-        var state = new State(calculation.cash, calculation.quantity, calculation.cost, calculation.average,
-                calculation.realized, processed, calculation.executed);
-        return new Result(state, calculation.executions, calculation.skipped);
+        return new Result(buildState(calculation, processed), calculation.executions, calculation.skipped);
+    }
+
+    private State buildState(Calculation calculation, LocalDate processedThrough) {
+        return new State(calculation.cash, calculation.quantity, calculation.cost, calculation.average,
+                calculation.realized, processedThrough, calculation.executed);
     }
 
     // 호출마다 생성하는 작업 상태. 외부 입력과 계산기 인스턴스에는 변경 가능한 상태를 두지 않는다.
