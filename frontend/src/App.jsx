@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import StockSearchInput from './StockSearchInput'
 import PerformanceView from './PerformanceView'
+import PlanSimulationView from './PlanSimulationView'
 import './App.css'
 
 const DASHBOARD_API_URL = 'http://localhost:8080/api/account/1/dashboard'
@@ -79,6 +80,7 @@ function App() {
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
   const [isPlanActionModalOpen, setIsPlanActionModalOpen] = useState(false)
   const [selectedPlanId, setSelectedPlanId] = useState(null)
+  const [simulationPlanId, setSimulationPlanId] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [formMessage, setFormMessage] = useState('')
   const [tradeMessage, setTradeMessage] = useState('')
@@ -443,6 +445,15 @@ function App() {
   }
 
   const selectedPlan = investmentPlans.find((plan) => plan.id === selectedPlanId)
+  const simulationPlan = investmentPlans.find((plan) => plan.id === simulationPlanId)
+  const refreshSimulationActions = async (planId) => {
+    const updated = await fetchJson(`${PLAN_API_URL}/${planId}/actions`)
+    const plan = investmentPlans.find((item) => item.id === planId)
+    setPlanActions(previous => [
+      ...previous.filter(action => action.investmentPlanId !== planId),
+      ...updated.map(action => ({ ...action, stockName: plan.stockName, stockSymbol: plan.stockSymbol })),
+    ])
+  }
   const selectedPlanActions = selectedPlan
     ? planActions.filter((action) => action.investmentPlanId === selectedPlan.id)
     : []
@@ -516,7 +527,7 @@ function App() {
                 Cash Transaction
               </button>
             </>
-          ) : currentView === 'plans' ? (
+          ) : currentView === 'plans' && !simulationPlan ? (
             <button
               type="button"
               className="cash-action-button"
@@ -621,7 +632,12 @@ function App() {
 
       {currentView === 'performance' && <PerformanceView accountId={ACCOUNT_ID} />}
 
-      {currentView === 'plans' && (
+      {currentView === 'plans' && simulationPlan && (
+        <PlanSimulationView key={simulationPlan.id} plan={simulationPlan}
+          actions={planActions.filter(action => action.investmentPlanId === simulationPlan.id)}
+          onBack={() => setSimulationPlanId(null)} onExecuted={refreshSimulationActions} />
+      )}
+      {currentView === 'plans' && !simulationPlan && (
         <section className="plans-section">
         <div className="section-heading">
           <h2>Investment Plans</h2>
@@ -672,6 +688,11 @@ function App() {
                   >
                     View Actions
                   </button>
+                  {plan.startedAt && plan.planStatus !== 'DRAFT' && (
+                    <button type="button" className="history-button" onClick={() => setSimulationPlanId(plan.id)}>
+                      Simulation
+                    </button>
+                  )}
                   {plan.startedAt && plan.planStatus === 'ACTIVE' && (
                     <button type="button" className="history-button" disabled={isSubmitting}
                       onClick={async () => {
@@ -1110,8 +1131,9 @@ function App() {
                   <div>
                     <strong>{action.actionType}</strong>
                     <span>
-                      {formatCurrency(action.triggerPrice)} · {action.quantity} shares · {action.actionStatus}
+                      {formatCurrency(action.triggerPrice)} · {action.quantity} shares · Actual: {action.actionStatus}
                     </span>
+                    <span>Virtual: {action.simulationStatus || 'PENDING'} · {action.executedDate || '-'}</span>
                   </div>
                   <div className="activity-value">{action.memo || '-'}</div>
                   {selectedPlan.planStatus === 'DRAFT' && <div>

@@ -604,3 +604,23 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 }
+.simulation-view {
+  min-width: 0;
+  padding: 24px 0;
+}
+
+.simulation-heading, .simulation-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.simulation-heading h2 { margin: 0; overflow-wrap: anywhere; }
+.simulation-heading p { color: var(--muted); }
+.simulation-view h3 { margin-top: 28px; }
+.simulation-summary { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.simulation-summary strong { overflow-wrap: anywhere; }
+.simulation-view button:disabled { opacity: 0.55; cursor: wait; }
+.simulation-view .trade-sell { color: #2563eb; }

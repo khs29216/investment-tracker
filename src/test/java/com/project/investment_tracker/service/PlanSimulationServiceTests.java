@@ -1,5 +1,6 @@
 package com.project.investment_tracker.service;
 
+import com.project.investment_tracker.controller.PlanSimulationController;
 import com.project.investment_tracker.dto.StockDailyPriceResponse;
 import com.project.investment_tracker.entity.*;
 import com.project.investment_tracker.global.error.BadRequestException;
@@ -17,6 +18,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -29,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 class PlanSimulationServiceTests {
@@ -103,6 +107,22 @@ class PlanSimulationServiceTests {
                 .forEach(action -> assertEquals(ActionStatus.PENDING, action.getActionStatus())));
         verify(prices).getDailyPrices("005930", today.minusDays(4), today.minusDays(1));
         verifyNoMoreInteractions(prices);
+    }
+
+    @Test
+    @DisplayName("실행 API가 실제 서비스를 통해 체결을 저장하고 반복 호출에는 새 체결을 반환하지 않는다")
+    void apiPersistsExecutionAndReturnsIncrementalResult() throws Exception {
+        var fixture = plan(today.minusDays(5), today.plusDays(5), 1000000L);
+        stubPrices(List.of(bar(today.minusDays(4), 150000), bar(today.minusDays(1), 200000)));
+        var mvc = MockMvcBuilders.standaloneSetup(new PlanSimulationController(service)).build();
+        mvc.perform(post("/api/plans/{id}/simulation", fixture.planId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.realizedProfit").value(1250000))
+                .andExpect(jsonPath("$.executions.length()").value(2));
+        assertExecuted(fixture.sellId(), today.minusDays(1));
+        mvc.perform(post("/api/plans/{id}/simulation", fixture.planId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.executions").isEmpty());
     }
 
     @Test
